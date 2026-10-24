@@ -3,6 +3,7 @@ import type {
   ResampledContour,
   ResamplingOptions,
 } from '../image-processing/resampleContour';
+import type { CourseColors } from '../image-processing/mapCourseColors';
 import type { CurveCorrectionResult } from '../image-processing/correctCurves';
 import type { SmoothingOptions } from '../image-processing/previewContour';
 import type {
@@ -28,6 +29,8 @@ export type CapturedPerson = {
   resamplingOptions?: ResamplingOptions;
   /** Resampled contour with sharp curves relaxed (Issue #6). */
   curveCorrection?: CurveCorrectionResult;
+  /** Person colors assigned to each corrected course point (Issue #9). */
+  courseColors?: CourseColors;
 };
 
 export type PosePoint = { x: number; y: number; visibility?: number };
