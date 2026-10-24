@@ -62,6 +62,7 @@ export function isFiniteTruckState(state: TruckState): boolean {
     state.speed,
     state.steering,
     state.distance,
+    state.brakePressure,
   ].every(Number.isFinite);
 }
 

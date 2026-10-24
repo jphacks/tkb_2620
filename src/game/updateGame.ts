@@ -18,6 +18,8 @@ export type TruckState = {
   steering: number;
   collided: boolean;
   distance: number;
+  /** ブレーキの効き（0〜1）。踏むとじわっと上がり、離すと素早く抜ける */
+  brakePressure: number;
 };
 export function initialTruckState(course: CourseData): TruckState {
   const [p, next] = course.points;
@@ -29,7 +31,29 @@ export function initialTruckState(course: CourseData): TruckState {
     steering: 0,
     collided: false,
     distance: 0,
+    brakePressure: 0,
   };
+}
+
+// 空気抵抗の係数。全開で最高速に達したとき、エンジンの力と抵抗がつり合うように決める
+const AIR_DRAG =
+  (VEHICLE.enginePower / VEHICLE.maxSpeed - VEHICLE.rollingResistance) /
+  VEHICLE.maxSpeed ** 2;
+
+/** 走行抵抗（転がり抵抗＋空気抵抗）による減速。アクセルを離すとこれだけで減速する */
+export function dragDeceleration(speed: number) {
+  return speed > 0 ? VEHICLE.rollingResistance + AIR_DRAG * speed * speed : 0;
+}
+
+/** エンジンの力による加速。低速は一定（タイヤの限界）、速くなるほど出力で頭打ち */
+export function driveAcceleration(speed: number, throttle: number) {
+  return (
+    throttle *
+    Math.min(
+      VEHICLE.driveAcceleration,
+      VEHICLE.enginePower / Math.max(speed, 0.1),
+    )
+  );
 }
 /** Segment vs vehicle OBB; includes front, sides and rear rather than center only. */
 export function hitsWall(state: TruckState, walls: WallSegment[]) {
@@ -86,27 +110,20 @@ export function updateGame(
       (target - next.steering) * (1 - Math.exp(-VEHICLE.steeringResponse * dt));
     const throttle = unit(input.throttle),
       brake = unit(input.brake);
-    // ブレーキ優先。アクセルは踏み込み具合で目標の速さを決める（一番奥で最高速）。
-    // 目標より遅ければ加速、速ければエンジンブレーキで目標まで落とす
-    const targetSpeed = throttle * VEHICLE.maxSpeed;
+    // ブレーキは踏み込むにつれてじわっと効き、離すと素早く抜ける
+    const pressure =
+      brake > next.brakePressure
+        ? Math.min(brake, next.brakePressure + VEHICLE.brakeRise * dt)
+        : Math.max(brake, next.brakePressure - VEHICLE.brakeRelease * dt);
+    next.brakePressure = pressure;
+    // 力のつり合い：エンジン − 走行抵抗 − ブレーキ。踏み込み量に見合った速さで自然に頭打ちになる
     const accel =
-      brake > 0
-        ? -VEHICLE.brakeDeceleration * brake -
-          VEHICLE.rollingDeceleration * (1 - brake)
-        : throttle > 0
-          ? next.speed < targetSpeed
-            ? VEHICLE.acceleration
-            : -VEHICLE.engineBraking
-          : -VEHICLE.rollingDeceleration;
+      driveAcceleration(next.speed, throttle) -
+      dragDeceleration(next.speed) -
+      VEHICLE.brakeDeceleration * pressure;
     let speed = next.speed + accel * dt;
-    // 目標の速さを行き過ぎない
-    if (brake === 0 && throttle > 0)
-      speed =
-        next.speed < targetSpeed
-          ? Math.min(speed, targetSpeed)
-          : Math.max(speed, targetSpeed);
-    // クリープ現象：ブレーキを踏んでいなければ、AT車のようにゆっくり前へ進む
-    if (brake === 0 && speed < VEHICLE.creepSpeed)
+    // クリープ現象：ペダルを離していれば、ほんの少しだけ前へ進む（ブレーキで止まる）
+    if (brake === 0 && pressure === 0 && speed < VEHICLE.creepSpeed)
       speed = Math.min(
         VEHICLE.creepSpeed,
         Math.max(speed, next.speed + VEHICLE.creepAcceleration * dt),
@@ -131,6 +148,12 @@ export function updateGame(
   }
   // 計算が壊れても（NaN・無限大）位置を飛ばさず、その場で止める（#22）
   if (!isFiniteTruckState(next))
-    return { ...state, speed: 0, steering: 0, collided: false };
+    return {
+      ...state,
+      speed: 0,
+      steering: 0,
+      collided: false,
+      brakePressure: 0,
+    };
   return next;
 }

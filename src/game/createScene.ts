@@ -220,13 +220,21 @@ export function createScene(
     // スマホの入力はPCの画面にフォーカスがなくても効く。値は念のため範囲内に丸める（#22）
     const received = getRemoteInput();
     const remote = received ? sanitizeDriveInput(received) : null;
-    const paused = isPaused();
+    // スマホの切断による一時停止（#22）はスタート前だけ。レース中（動き出してからゴールまで）は
+    // 止めずに、届いていない操作を0（離した状態）として惰性で走らせる（止めるとカクッと見えるため）
+    const paused = isPaused() && !started;
     if (paused && state.speed > 0) {
       state = { ...state, speed: 0 };
       clearInput();
     }
     // ゴールしたら「もう一度」まで止める
-    if (!paused && !document.hidden && !lap.finished && (active || remote)) {
+    // スタート前は、キーボードの操作か、スマホ2台がそろうまで動かさない
+    if (
+      !paused &&
+      !document.hidden &&
+      !lap.finished &&
+      (active || remote || started)
+    ) {
       const keyboard: DriveInput = active
         ? {
             throttle: Number(keys.has('ArrowUp') || keys.has('KeyW')),
@@ -276,7 +284,8 @@ export function createScene(
         speed: state.speed,
         distance: state.distance,
         collided: now < collisionUntil,
-        active: !paused && (active || remote !== null),
+        active:
+          !paused && (active || remote !== null || (started && !lap.finished)),
         time: raceTime,
         finished: lap.finished,
       });
