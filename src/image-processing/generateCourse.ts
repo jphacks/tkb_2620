@@ -24,8 +24,9 @@ import type { CourseColors } from './mapCourseColors';
 
 /** Sample value shared with the fixture course; tune in Issue #27. */
 export const DEFAULT_ROAD_WIDTH = 6.0;
-/** Longest side of the course in game units. Limbs then fit a 6-wide road; tune in Issue #27. */
-export const DEFAULT_COURSE_SIZE = 140;
+/** Longest side of the course in game units, chosen with the course-screen sliders.
+ * Large enough that limbs fit a 6-wide road with only light reshaping (fitRoad). */
+export const DEFAULT_COURSE_SIZE = 300;
 /** Used when no person colors are available. */
 export const DEFAULT_WALL_COLOR = '#a0a0a0';
 export const DEFAULT_THEME_COLOR = '#f2a65a';

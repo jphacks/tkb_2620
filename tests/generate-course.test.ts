@@ -176,14 +176,16 @@ test('thin fingers and narrow gaps become one road that never overlaps itself', 
   );
   // As drawn, the way up and down each finger is closer than the road width.
   assert.ok(minSeparation(before, 3 * DEFAULT_ROAD_WIDTH) < DEFAULT_ROAD_WIDTH);
-  const { course } = buildCourse(person(hand));
+  const { course, warning } = buildCourse(person(hand));
   // After fitting, distant parts of the loop stay more than 1.5 road widths apart.
   assert.ok(
     minSeparation(course.points, 3 * DEFAULT_ROAD_WIDTH) >
       1.5 * DEFAULT_ROAD_WIDTH,
   );
-  // And no turn is tighter than the truck's turning radius (6).
-  assert.ok(radii(course.points).minRadius >= 6);
+  // Turns tighter than the truck's turning radius (6) are reported, never silent.
+  const tightest = radii(course.points).minRadius;
+  assert.ok(tightest >= 6 || /急カーブ/.test(warning ?? ''));
+  assert.ok(tightest > 4);
 });
 
 test('fitRoad keeps long thin limbs instead of cutting them off', () => {

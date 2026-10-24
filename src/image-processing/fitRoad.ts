@@ -30,9 +30,9 @@ export type RoadFitOptions = {
   maxDisplacement: number;
 };
 export const DEFAULT_ROAD_FIT = {
-  // One road width: the way out and back along an arm no longer overlap.
-  grow: 6,
-  concaveRadius: 10,
+  // Chosen by trying the sliders on the course screen (with courseSize 300).
+  grow: 3,
+  concaveRadius: 2,
   // The truck's turning radius; the shaping above already keeps most turns wider.
   minTurnRadius: 6,
   maxDisplacement: 2,
