@@ -6,14 +6,21 @@ import {
   toSteering,
   upVector,
   wheelAngle,
+  wrapDegrees,
 } from '../controls/tilt';
 
 export type TiltMode = 'steering' | 'pedal';
 export type TiltStatus =
   'idle' | 'requesting' | 'running' | 'denied' | 'insecure' | 'unsupported';
-export type TiltValue = { steering: number; throttle: number; brake: number };
+export type TiltValue = {
+  steering: number;
+  throttle: number;
+  brake: number;
+  /** 基準からスマホを回した・倒した実際の角度（度）。左回り・奥がプラス。絵に使う */
+  angle: number;
+};
 
-const ZERO: TiltValue = { steering: 0, throttle: 0, brake: 0 };
+const ZERO: TiltValue = { steering: 0, throttle: 0, brake: 0, angle: 0 };
 
 type PermissionRequester = { requestPermission?: () => Promise<string> };
 
@@ -71,10 +78,11 @@ export function useTilt(mode: TiltMode) {
       lastTime = event.timeStamp;
       smoothed = smoothed === null ? raw : smoothAngle(smoothed, raw, dt);
       if (base.current === null) base.current = smoothed;
+      const angle = wrapDegrees(smoothed - base.current);
       valueRef.current =
         mode === 'steering'
-          ? { ...ZERO, steering: toSteering(smoothed, base.current) }
-          : { ...ZERO, ...toPedal(smoothed, base.current) };
+          ? { ...ZERO, angle, steering: toSteering(smoothed, base.current) }
+          : { ...ZERO, angle, ...toPedal(smoothed, base.current) };
       // 画面の更新は1フレームに1回（イベントごとに描き直すと残像のように見える）
       if (!frame)
         frame = requestAnimationFrame(() => {

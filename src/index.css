@@ -799,7 +799,7 @@ button:disabled {
 .controller-steering .controller-menu {
   width: min(260px, 45%);
 }
-/* 絵はスマホに対して回さない。切れ具合は下のメーターで見せる */
+/* 絵はスマホを回した角度だけ回す。毎フレーム変わるのでアニメーションは付けない */
 .wheel {
   position: absolute;
   top: 50%;
@@ -826,33 +826,6 @@ button:disabled {
 .wheel:disabled,
 .pedals:disabled {
   opacity: 0.6;
-}
-.steer-meter {
-  position: absolute;
-  left: 50%;
-  bottom: 18px;
-  width: min(60dvh, 360px);
-  height: 8px;
-  margin-left: calc(min(60dvh, 360px) / -2);
-  border-radius: 4px;
-  background: #e6e2d6;
-}
-.steer-meter::after {
-  content: '';
-  position: absolute;
-  top: -4px;
-  bottom: -4px;
-  left: 50%;
-  width: 2px;
-  margin-left: -1px;
-  background: #27382f;
-}
-.steer-meter span {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  border-radius: 4px;
-  background: #efa747;
 }
 .wheel-mark {
   position: absolute;
