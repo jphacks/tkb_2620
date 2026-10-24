@@ -292,3 +292,35 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+.person-colors canvas {
+  display: block;
+  width: 100%;
+  max-width: 440px;
+  height: auto;
+  margin: 20px auto;
+  border-radius: 12px;
+}
+.person-colors canvas[hidden] {
+  display: none;
+}
+.color-palette {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 12px;
+}
+.color-palette span {
+  display: block;
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid #c5cfc5;
+}
+.color-palette small {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .color-palette {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

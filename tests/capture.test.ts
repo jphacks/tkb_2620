@@ -1,4 +1,9 @@
 import {
+  calculateMedianColor,
+  extractRepresentativeColors,
+  splitContourIntoSegments,
+} from '../src/image-processing/extractColors.ts';
+import {
   resampleClosedContour,
   resamplePhotoContour,
 } from '../src/image-processing/resampleContour.ts';
@@ -447,4 +452,120 @@ test('photo conversion uses the photo pixel dimensions and explicit meters per p
       }),
     /倍率/,
   );
+});
+
+function colorFixture(empty = false) {
+  const width = 40,
+    height = 40,
+    data = new Uint8ClampedArray(width * height * 4),
+    mask = new Uint8Array(100);
+  for (let y = 0; y < 10; y++)
+    for (let x = 0; x < 10; x++)
+      mask[y * 10 + x] = !empty && x >= 1 && x < 9 && y >= 1 && y < 9 ? 1 : 0;
+  for (let y = 0; y < 40; y++)
+    for (let x = 0; x < 40; x++)
+      data.set(
+        x >= 4 && x < 36 && y >= 4 && y < 36
+          ? [200, 30, 40, 255]
+          : [0, 0, 255, 255],
+        (y * 40 + x) * 4,
+      );
+  return {
+    image: { width, height, data },
+    mask: { width: 10, height: 10, data: mask },
+    contour: [
+      { x: 4, y: 4 },
+      { x: 36, y: 4 },
+      { x: 36, y: 36 },
+      { x: 4, y: 36 },
+    ],
+  };
+}
+test('color extraction samples inside a different-resolution mask in both contour directions', () => {
+  const { image, mask, contour } = colorFixture();
+  for (const points of [contour, [contour[0], ...contour.slice(1).reverse()]]) {
+    const result = extractRepresentativeColors(image, mask, points);
+    assert.equal(result.colorSamples.length, 16);
+    assert.equal(result.warnings.length, 0);
+    assert.ok(
+      result.colorSamples.every((s) => s.color.join(',') === '200,30,40'),
+    );
+    assert.ok(
+      result.probes.every((p) => p.x >= 4 && p.x < 36 && p.y >= 4 && p.y < 36),
+    );
+    assert.equal(result.colorSamples[0].t, 0.03125);
+  }
+});
+test('RGB median suppresses outliers and missing colors safely fall back', () => {
+  assert.deepEqual(
+    calculateMedianColor([
+      [220, 40, 35],
+      [225, 45, 40],
+      [180, 30, 30],
+      [222, 42, 38],
+      [245, 200, 195],
+    ]),
+    [222, 42, 38],
+  );
+  const { image, mask, contour } = colorFixture(true);
+  const result = extractRepresentativeColors(image, mask, contour);
+  assert.equal(result.probes.length, 0);
+  assert.equal(result.warnings.length, 1);
+  assert.ok(
+    result.colorSamples.every(
+      (s) => s.interpolated && s.color.join(',') === '160,160,160',
+    ),
+  );
+  assert.throws(
+    () =>
+      extractRepresentativeColors(image, mask, contour, {
+        inwardOffsets: [-1],
+      }),
+    /設定/,
+  );
+});
+test('partial sampling failures fill from adjacent valid segments across the loop seam', () => {
+  const { image, mask, contour } = colorFixture();
+  for (let y = 0; y < 40; y++)
+    for (let x = 0; x < 40; x++)
+      if (y < 15) image.data[(y * 40 + x) * 4 + 3] = 0;
+  const result = extractRepresentativeColors(image, mask, contour);
+  assert.ok(result.colorSamples.some((s) => s.interpolated));
+  assert.ok(result.colorSamples.some((s) => s.sampleCount));
+  assert.ok(
+    result.colorSamples.every((s) => s.color.join(',') === '200,30,40'),
+  );
+  assert.ok(result.warnings.length > 0);
+});
+test('color segments follow arc distance rather than point density', () => {
+  const { contour } = colorFixture();
+  const a = splitContourIntoSegments(contour),
+    b = splitContourIntoSegments([
+      contour[0],
+      { x: 5, y: 4 },
+      { x: 6, y: 4 },
+      ...contour.slice(1),
+    ]);
+  assert.equal(a.totalLength, b.totalLength);
+  assert.deepEqual(a.at(0.125), b.at(0.125));
+  assert.deepEqual(a.at(1), a.at(0));
+});
+
+test('color sampling remains in bounds when the person touches every photo edge', () => {
+  const { image } = colorFixture();
+  const result = extractRepresentativeColors(
+    image,
+    { width: 40, height: 40, data: new Uint8Array(1600).fill(1) },
+    [
+      { x: 0, y: 0 },
+      { x: 40, y: 0 },
+      { x: 40, y: 40 },
+      { x: 0, y: 40 },
+    ],
+  );
+  assert.ok(result.probes.length > 0);
+  assert.ok(
+    result.probes.every((p) => p.x >= 0 && p.x < 40 && p.y >= 0 && p.y < 40),
+  );
+  assert.equal(result.colorSamples.length, 16);
 });

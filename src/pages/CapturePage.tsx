@@ -1,3 +1,5 @@
+import { PersonColors } from '../components/PersonColors';
+import type { PhotoColorResult } from '../components/PersonColors';
 import {
   DEFAULT_RESAMPLING,
   resamplePhotoContour,
@@ -20,6 +22,11 @@ type Props = {
 };
 
 export default function CapturePage({ captured, onConfirm }: Props) {
+  const [colorResult, setColorResult] = useState<PhotoColorResult>(
+    captured?.colorExtraction
+      ? { blob: captured.blob, result: captured.colorExtraction }
+      : null,
+  );
   const [photo, setPhoto] = useState<CapturedPerson | null>(captured);
   const [smoothing, setSmoothing] = useState<SmoothingOptions>(
     captured?.smoothingOptions ?? DEFAULT_SMOOTHING,
@@ -226,10 +233,18 @@ export default function CapturePage({ captured, onConfirm }: Props) {
             </button>
             <button
               className="capture-primary"
-              disabled={!photo.outline || !resampled.result}
+              disabled={
+                !photo.outline ||
+                !resampled.result ||
+                colorResult?.blob !== photo.blob
+              }
               onClick={() =>
                 onConfirm({
                   ...photo,
+                  colorExtraction:
+                    colorResult?.blob === photo.blob
+                      ? colorResult.result
+                      : undefined,
                   smoothedOutline:
                     photo.outline && smoothed
                       ? { ...photo.outline, points: smoothed.points }
@@ -252,6 +267,11 @@ export default function CapturePage({ captured, onConfirm }: Props) {
       )}
       {smoothed?.warning && <p role="status">{smoothed.warning}</p>}
       {resampled.error && <p role="alert">{resampled.error}</p>}
+      <PersonColors
+        photo={photo}
+        onResult={setColorResult}
+        onSettingsChange={() => onConfirm(null)}
+      />
       <ContourInspection
         photo={photo}
         smoothing={smoothing}
