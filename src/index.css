@@ -1578,3 +1578,277 @@ button:disabled {
   --impact-glow: #ffd54170;
   --impact-label: #725000;
 }
+
+/* ───────── 配送センターの世界観（#26） ─────────
+   結果画面の配送伝票（濃い線・紙・ずらした影）を全画面の基準にする。
+   --course-accent は選んだコースの人物の色（App が付ける） */
+:root {
+  --ink: #27382f;
+  --paper: #fffdf6;
+  --paper-line: #27382f;
+  --shadow-ink: #27382f22;
+  --muted: #576354;
+  --stamp: #c8372d;
+  --course-accent: #f2a65a;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.02em;
+}
+.brand-icon {
+  width: 30px;
+  height: 30px;
+  flex: none;
+}
+.brand-icon-start {
+  fill: var(--stamp);
+}
+.app-game .brand-icon {
+  width: 22px;
+  height: 22px;
+}
+.link-button {
+  border: 0;
+  background: none;
+  padding: 6px 2px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-weight: 700;
+}
+.link-button.back {
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 500;
+}
+.primary-button {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: white;
+  font-weight: 700;
+  padding: 14px 24px;
+}
+.primary-button:disabled {
+  cursor: default;
+  opacity: 1;
+  background: #dfe3da;
+  border-color: #dfe3da;
+  color: var(--muted);
+}
+
+/* ホーム＝受付 */
+.home-title {
+  font-size: clamp(28px, 5vw, 48px);
+  margin-bottom: 32px;
+  text-wrap: balance;
+}
+.route-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+/* 荷札：左にコースの色の帯、上に受付の区分 */
+.route-card {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  text-align: left;
+  padding: 24px 24px 22px 32px;
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+  box-shadow: 6px 6px 0 var(--shadow-ink);
+  transition:
+    transform 120ms,
+    box-shadow 120ms;
+}
+.route-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 10px;
+  background: var(--course-accent);
+  border-right: 2px dashed var(--paper-line);
+}
+.route-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 var(--shadow-ink);
+}
+.route-card-label {
+  width: fit-content;
+  padding: 2px 10px;
+  border: 2px solid var(--stamp);
+  border-radius: 4px;
+  color: var(--stamp);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+}
+.route-card-title {
+  font-size: 22px;
+  line-height: 1.4;
+}
+.route-card-text {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.route-card-go {
+  margin-top: 6px;
+  font-weight: 700;
+}
+.home-sample {
+  margin-top: 28px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-card {
+    transition: none;
+  }
+}
+
+/* 思い出のコース */
+.memories h1,
+.connect h1 {
+  font-size: clamp(26px, 4vw, 40px);
+  margin: 8px 0 16px;
+}
+.memories .saved-courses {
+  margin-top: 16px;
+}
+.memories .saved-courses > h2 {
+  display: none;
+}
+
+/* 出発前の点呼＝スマホの接続 */
+.connect-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px 32px;
+}
+.connect-head > div:first-child {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+.connect-route {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px 10px 10px;
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+}
+.connect-route small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.connect-route strong {
+  font-size: 16px;
+}
+.crew-slots {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+/* 配達員証：まだ登録していない枠は点線 */
+.crew-slot {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px 20px;
+  background: var(--paper);
+  border: 2px dashed #9aa59a;
+  border-radius: 6px;
+}
+.crew-slot.joined {
+  border: 2px solid var(--paper-line);
+  box-shadow: 6px 6px 0 var(--shadow-ink);
+}
+.crew-slot-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.crew-slot-role {
+  font-size: 20px;
+  font-weight: 800;
+}
+.crew-slot-state {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #e9ede4;
+  font-size: 13px;
+  font-weight: 700;
+}
+.joined .crew-slot-state {
+  background: var(--ink);
+  color: white;
+}
+.crew-slot-qr {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 190px;
+  background: white;
+  border-radius: 4px;
+}
+.crew-slot-qr a {
+  display: block;
+  line-height: 0;
+}
+.joined .crew-slot-qr svg {
+  opacity: 0.25;
+}
+.crew-slot-wait {
+  color: var(--muted);
+  font-size: 13px;
+}
+/* 登録できたら、伝票と同じ赤い丸スタンプを押す */
+.crew-stamp {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  border: 4px solid var(--stamp);
+  border-radius: 50%;
+  color: var(--stamp);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  transform: rotate(-12deg);
+  animation: crew-stamp 220ms ease-out;
+}
+@keyframes crew-stamp {
+  from {
+    transform: rotate(-12deg) scale(1.6);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crew-stamp {
+    animation: none;
+  }
+}
+.crew-slot-how {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.connect-actions,
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin-top: 28px;
+}

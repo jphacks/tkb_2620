@@ -23,7 +23,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('BODY ROAD: 画面でエラーが起きました', error, info);
+    console.error('Bodrive: 画面でエラーが起きました', error, info);
   }
 
   private recover(action: () => void) {
