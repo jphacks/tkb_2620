@@ -102,3 +102,31 @@ footer {
     padding: 32px 0;
   }
 }
+
+.course-preview {
+  overflow: hidden;
+  background: white;
+  border: 1px solid #d7dccf;
+  border-radius: 20px;
+}
+.course-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  font-size: 13px;
+}
+.course-canvas {
+  width: 100%;
+  height: clamp(320px, 58vh, 640px);
+  touch-action: none;
+}
+.course-canvas canvas {
+  display: block;
+}
+.course-caption {
+  padding: 0 16px;
+  font-size: 13px;
+}
