@@ -1,4 +1,8 @@
 import {
+  resampleClosedContour,
+  resamplePhotoContour,
+} from '../src/image-processing/resampleContour.ts';
+import {
   smoothClosedContour,
   DEFAULT_SMOOTHING,
 } from '../src/image-processing/previewContour.ts';
@@ -341,5 +345,106 @@ test('adjustable smoothing reduces small radial bumps without mutating the origi
     strong.points.every(
       (p) => Math.abs(Math.hypot(p.x - 0.5, p.y - 0.5) - 0.3) < 0.03,
     ),
+  );
+});
+
+const rectangle = [
+  { x: 0, y: 0 },
+  { x: 2, y: 0 },
+  { x: 2, y: 1 },
+  { x: 0, y: 1 },
+];
+test('closed resampling includes closing edge, equal arc spacing, t and preserves start/direction', () => {
+  const result = resampleClosedContour(rectangle, 0.5);
+  assert.equal(result.totalLength, 6);
+  assert.equal(result.points.length, 12);
+  assert.equal(result.actualSpacing, 0.5);
+  assert.deepEqual(result.points[0], { x: 0, y: 0, t: 0, distance: 0 });
+  assert.equal(result.points[1].x, 0.5);
+  assert.deepEqual(result.points[11], {
+    x: 0,
+    y: 0.5,
+    t: 11 / 12,
+    distance: 5.5,
+  });
+  for (let i = 0; i < 12; i++) {
+    assert.equal(result.points[i].distance, i * 0.5);
+    assert.ok(
+      Math.abs(
+        Math.hypot(
+          result.points[i].x - result.points[(i + 1) % 12].x,
+          result.points[i].y - result.points[(i + 1) % 12].y,
+        ) - 0.5,
+      ) < 1e-10,
+    );
+  }
+  const backwards = resampleClosedContour(
+    [rectangle[0], ...rectangle.slice(1).reverse()],
+    0.5,
+  );
+  assert.equal(backwards.points[1].y, 0.5);
+});
+test('non-divisible spacing is adjusted to close evenly without duplicating the endpoint', () => {
+  const result = resampleClosedContour(rectangle, 0.7);
+  assert.equal(result.points.length, 9);
+  assert.ok(Math.abs(result.actualSpacing - 6 / 9) < 1e-12);
+  assert.ok(
+    Math.abs(
+      result.totalLength -
+        result.points.at(-1)!.distance -
+        result.actualSpacing,
+    ) < 1e-12,
+  );
+  assert.ok(result.points.every((p) => p.t >= 0 && p.t < 1));
+});
+test('duplicates and tiny edges are removed without changing input or perimeter', () => {
+  const points = [
+    rectangle[0],
+    rectangle[0],
+    { x: 1e-9, y: 0 },
+    ...rectangle.slice(1),
+    rectangle[0],
+  ];
+  const copy = structuredClone(points);
+  assert.equal(resampleClosedContour(points, 0.5).totalLength, 6);
+  assert.deepEqual(points, copy);
+  assert.throws(() => resampleClosedContour(rectangle, 0), /点間隔/);
+  assert.throws(() => resampleClosedContour(rectangle, NaN), /点間隔/);
+  assert.throws(() => resampleClosedContour(rectangle, 1e-6), /点数/);
+  assert.throws(
+    () =>
+      resampleClosedContour(
+        [
+          { x: 0, y: 0 },
+          { x: 0, y: 0 },
+        ],
+        0.5,
+      ),
+    /点/,
+  );
+});
+test('photo conversion uses the photo pixel dimensions and explicit meters per pixel', () => {
+  const points = [
+    { x: 0, y: 0 },
+    { x: 1, y: 0 },
+    { x: 1, y: 1 },
+    { x: 0, y: 1 },
+  ];
+  const result = resamplePhotoContour(points, 200, 100, {
+    metersPerPixel: 0.01,
+    spacing: 0.5,
+  });
+  assert.equal(result.totalLength, 6);
+  assert.equal(result.metersPerPixel, 0.01);
+  assert.equal(result.imageWidth, 200);
+  assert.equal(result.points[4].x, 2);
+  assert.equal(result.points[6].y, 1);
+  assert.throws(
+    () =>
+      resamplePhotoContour(points, 200, 100, {
+        metersPerPixel: 0,
+        spacing: 0.5,
+      }),
+    /倍率/,
   );
 });
