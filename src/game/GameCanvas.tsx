@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { CourseData } from '../../shared/course';
 import type { createScene, DrivingStatus } from './createScene';
 import type { DriveInput } from './updateGame';
+import { formatTime } from './lap';
 export function GameCanvas({
   course,
   toolbarExtra,
@@ -26,6 +27,8 @@ export function GameCanvas({
     distance: 0,
     collided: false,
     active: false,
+    time: 0,
+    finished: false,
   });
   useEffect(() => {
     const element = container.current;
@@ -64,17 +67,22 @@ export function GameCanvas({
           <span>↑ / W 加速 / ↓ / S / Space ブレーキ / ← → / A D ハンドル</span>
           <div className="drive-status">
             <span>
+              タイム <strong>{formatTime(status.time)}</strong>
+            </span>
+            <span>
               速度 {status.speed.toFixed(1)} <small>unit/s</small>
             </span>
             <span>
               走行距離 {status.distance.toFixed(1)} <small>unit</small>
             </span>
             <span>
-              {status.collided
-                ? '壁に接触 — RでSTARTへ'
-                : status.active
-                  ? '走行中'
-                  : '画面をクリックして操作'}
+              {status.finished
+                ? '配送完了！'
+                : status.collided
+                  ? '壁に接触 — RでSTARTへ'
+                  : status.active
+                    ? '走行中'
+                    : '画面をクリックして操作'}
             </span>
           </div>
         </div>
@@ -98,6 +106,20 @@ export function GameCanvas({
           </button>
         </div>
       </div>
+      {status.finished && (
+        <div className="goal-overlay" role="status">
+          <p className="goal-title">配送完了！</p>
+          <p className="goal-time">{formatTime(status.time)}</p>
+          <button
+            onClick={() => {
+              scene.current?.resetTruck();
+              container.current?.focus();
+            }}
+          >
+            もう一度
+          </button>
+        </div>
+      )}
       {error && <p role="alert">{error}</p>}
       <div
         className="course-canvas"
