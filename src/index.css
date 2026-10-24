@@ -227,6 +227,31 @@ button:disabled {
   pointer-events: none;
   overflow: visible;
 }
+/* コースのSTART地点（#7）。輪郭の最も上・同じ高さなら最も右 */
+.start-marker {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: #e5322d;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px #5c1210;
+  pointer-events: none;
+}
+.start-marker span {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #e5322d;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
 .person-outline path {
   fill: none;
   stroke: #ffe229;

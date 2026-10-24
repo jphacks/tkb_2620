@@ -1,6 +1,7 @@
 import { closeSmallMaskGaps } from '../image-processing/cleanPersonMask';
 import { FilesetResolver, ImageSegmenter } from '@mediapipe/tasks-vision';
 import { extractOuterContour } from '../image-processing/extractContour';
+import { orderFromStart } from '../image-processing/normalizeContour';
 import { isFullBody } from './capture';
 import type { CapturedPerson } from './capture';
 
@@ -41,10 +42,14 @@ export async function analyzePhoto(
         const data = closeSmallMaskGaps(foreground, mask.width, mask.height);
         binaryMask = { data, width: mask.width, height: mask.height };
         const pixels = extractOuterContour(data, mask.width, mask.height);
-        const points = pixels.map((p) => ({
-          x: p.x / mask.width,
-          y: p.y / mask.height,
-        }));
+        // START（最も上・同じ高さなら最も右）を先頭に、反時計回りへそろえる（#7）。
+        // ここでそろえると、平滑化・等間隔化・色の取得もSTARTから同じ向きになる。
+        const points = orderFromStart(
+          pixels.map((p) => ({
+            x: p.x / mask.width,
+            y: p.y / mask.height,
+          })),
+        );
         outline = {
           points,
           touchesEdge: points.some(
