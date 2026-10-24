@@ -8,14 +8,22 @@ import type {
 import { sanitizeDriveInput } from '../game/safety';
 import type { DriveInput } from '../game/updateGame';
 
-/** この時間スマホから届かなければ、その担当の入力を0に戻す（通信が切れたときの暴走防止） */
-const STALE_MS = 500;
+/**
+ * 通信が一瞬途切れても、最後に届いた操作をこの時間までは使い続ける。
+ * それ以上届かなければ、その担当の操作は0（アクセル・ブレーキを離し、ハンドルはまっすぐ）。
+ */
+const HOLD_MS = 1000;
 
 type Received = { input: ControlInput; at: number };
 
-/** PC側：2台のスマホの操作を1台分の入力にまとめる（#14） */
+/**
+ * PC側：2台のスマホの操作を1台分の入力にまとめる（#14）。
+ * ハンドルとアクセル・ブレーキの両方がルームにいないときは null。
+ * レース中に null になってもトラックは止まらない（createScene が惰性で走らせる）。
+ */
 export function useRemoteInput(room: RoomState | null) {
   const latest = useRef<{ steering?: Received; pedal?: Received }>({});
+  const bothJoined = useRef(false);
 
   useEffect(() => {
     const onInput = ({ role, ...input }: ControlInput & { role: string }) => {
@@ -28,19 +36,20 @@ export function useRemoteInput(room: RoomState | null) {
     };
   }, []);
 
-  // 担当が抜けたら、その入力をすぐ捨てる
+  // 参加状況はルームの情報で判断する（通信の途切れとは分ける）。担当が抜けたら、その入力はすぐ捨てる
   useEffect(() => {
+    bothJoined.current = Boolean(room?.steering && room?.pedal);
     if (!room?.steering) delete latest.current.steering;
     if (!room?.pedal) delete latest.current.pedal;
   }, [room?.steering, room?.pedal]);
 
   const getInput = useCallback((): DriveInput | null => {
+    if (!bothJoined.current) return null;
     const now = performance.now();
-    const fresh = (received?: Received) =>
-      received && now - received.at < STALE_MS ? received.input : null;
-    const steering = fresh(latest.current.steering),
-      pedal = fresh(latest.current.pedal);
-    if (!steering && !pedal) return null;
+    const held = (received?: Received) =>
+      received && now - received.at < HOLD_MS ? received.input : null;
+    const steering = held(latest.current.steering),
+      pedal = held(latest.current.pedal);
     // サーバーでも丸めているが、壊れた値がゲームに入らないようここでも丸める（#22）
     return sanitizeDriveInput({
       steering: steering?.steering,

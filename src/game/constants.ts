@@ -2,15 +2,22 @@
 export const VEHICLE = {
   width: 1.2,
   length: 2.4,
+  /** 全開で最終的に届く最高速。空気抵抗はこれに合わせて決まる */
   maxSpeed: 40,
-  acceleration: 16,
-  brakeDeceleration: 20,
-  rollingDeceleration: 0.7,
-  /** アクセルを戻して目標の速さより速いときの減速 */
-  engineBraking: 5,
-  /** クリープ現象：ペダルを離したときにゆっくり進む速さと、そこまでの加速 */
-  creepSpeed: 1.5,
-  creepAcceleration: 1.5,
+  /** 低速でのアクセル全開の加速（タイヤの限界） */
+  driveAcceleration: 8,
+  /** エンジンの出力（加速×速さ）。速くなるほど加速が鈍る */
+  enginePower: 100,
+  /** 転がり抵抗。アクセルを離して遅いときは、ほとんどこれだけで減速する */
+  rollingResistance: 0.3,
+  /** ブレーキを目一杯効かせたときの減速 */
+  brakeDeceleration: 10,
+  /** ブレーキの効きが上がる・抜ける速さ（1秒あたり）。約0.4秒で目一杯になる */
+  brakeRise: 2.5,
+  brakeRelease: 6,
+  /** クリープ現象：ペダルを離したときにほんの少し進む速さと、そこまでの加速 */
+  creepSpeed: 0.8,
+  creepAcceleration: 0.4,
   minTurnRadius: 6,
   steeringResponse: 5,
 };
