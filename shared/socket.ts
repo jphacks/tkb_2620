@@ -14,7 +14,10 @@ export type ControlInput = {
   brake?: number;
 };
 
+export type GameFeedback = 'collision' | 'harsh-acceleration' | 'cargo-drop';
+
 export interface ServerToClientEvents {
+  'game:feedback': (event: GameFeedback) => void;
   'server:ready': (data: { message: string }) => void;
   'room:created': (data: RoomState) => void;
   'room:joined': (data: RoomState & { role: ControllerRole }) => void;
@@ -25,6 +28,7 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
+  'game:feedback': (event: GameFeedback) => void;
   'connection:ping': (ack: () => void) => void;
   'room:create': () => void;
   'room:join': (data: { roomId: string; role: ControllerRole }) => void;

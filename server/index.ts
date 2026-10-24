@@ -4,7 +4,13 @@ import type {
   ClientToServerEvents,
   ServerToClientEvents,
 } from '../shared/socket.js';
-import { createRoom, getController, joinRoom, leaveRoom } from './rooms.js';
+import {
+  createRoom,
+  getController,
+  getRoomForSocket,
+  joinRoom,
+  leaveRoom,
+} from './rooms.js';
 import { sanitizeUnit } from '../shared/controls.js';
 
 const port = Number(process.env.PORT ?? 3001);
@@ -61,6 +67,24 @@ io.on('connection', (socket) => {
       ...input,
       role: controller.role,
     });
+  });
+  let lastFeedback = 0;
+  socket.on('game:feedback', (event) => {
+    const room = getRoomForSocket(socket.id);
+    if (
+      !room ||
+      room.hostId !== socket.id ||
+      (event !== 'collision' &&
+        event !== 'harsh-acceleration' &&
+        event !== 'cargo-drop')
+    )
+      return;
+    const now = Date.now();
+    if (event !== 'cargo-drop' && now - lastFeedback < 850) return;
+    lastFeedback = now;
+    for (const id of [room.steering, room.pedal]) {
+      if (id) io.to(id).emit('game:feedback', event);
+    }
   });
   socket.on('disconnect', () => {
     const updated = leaveRoom(socket.id);
