@@ -45,6 +45,9 @@ const roleLabels: Record<ControllerRole, string> = {
 
 export default function App() {
   const [active, setActive] = useState(0);
+  const [firstPlayPhoto, setFirstPlayPhoto] = useState<CapturedPerson | null>(
+    null,
+  );
   const [captured, setCaptured] = useState<CapturedPerson | null>(null);
   // Photo tab: 'capture' picks the photo, 'course' generates and names the course.
   const [photoStep, setPhotoStep] = useState<'capture' | 'course'>('capture');
@@ -110,6 +113,7 @@ export default function App() {
   }, [active, usedRoles, room, connected, getLastInputAt]);
 
   function goTo(page: number) {
+    if (active === GAME_PAGE && page !== GAME_PAGE) setFirstPlayPhoto(null);
     // ゲームを出たら、次のゲームでは改めてスマホの参加を見る
     if (page !== GAME_PAGE) setUsedRoles(new Set());
     setActive(page);
@@ -177,6 +181,7 @@ export default function App() {
         >
           {active === GAME_PAGE ? (
             <GamePage
+              minimapPhoto={firstPlayPhoto}
               course={course?.data}
               courseName={course?.name}
               roomSlot={<RoomPanel connected={connected} room={room} />}
@@ -205,6 +210,7 @@ export default function App() {
                   );
                   return;
                 }
+                setFirstPlayPhoto(captured);
                 setCourse({ data, name });
                 goTo(GAME_PAGE);
               }}

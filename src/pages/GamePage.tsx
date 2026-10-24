@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { CapturedPerson } from '../capture/capture';
 import type { CourseData } from '../../shared/course';
 import type { DriveInput } from '../game/updateGame';
 import type { DeliveryResult } from '../game/score';
@@ -6,6 +7,7 @@ import { GameCanvas } from '../game/GameCanvas';
 import { sampleCourse } from '../fixtures/sampleCourse';
 import { validateCourseData } from '../game/safety';
 export default function GamePage({
+  minimapPhoto,
   roomSlot,
   getRemoteInput,
   course,
@@ -15,6 +17,7 @@ export default function GamePage({
   onKeyboardContinue,
   onLobby,
 }: {
+  minimapPhoto?: CapturedPerson | null;
   roomSlot?: ReactNode;
   getRemoteInput?: () => DriveInput | null;
   /** The course made from the photo (Issue #10); the sample course until then. */
@@ -46,6 +49,7 @@ export default function GamePage({
       )}
       <GameCanvas
         course={playable ?? sampleCourse}
+        minimapPhoto={playable ? minimapPhoto : null}
         toolbarExtra={
           <>
             {name}

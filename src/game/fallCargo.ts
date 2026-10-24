@@ -59,6 +59,10 @@ export function updateCargoFalls(
       ...item,
       status: 'falling',
       fall: {
+        origin: {
+          x: truck.x + local.x * cos + local.z * sin,
+          z: truck.z - local.x * sin + local.z * cos,
+        },
         position: {
           x: truck.x + local.x * cos + local.z * sin,
           y: local.y + CARGO.size / 2 + (item.lift ?? 0),
@@ -149,4 +153,15 @@ function separateFallenCargo(items: CargoItem[]) {
       }
     if (!touching) break;
   }
+}
+
+/** One fixed marker per dropped box; it does not follow the flight or landing. */
+export function cargoDropLocations(items: readonly CargoItem[]) {
+  return items
+    .filter((c) => (c.status === 'falling' || c.status === 'lost') && c.fall)
+    .map((c) => ({
+      id: c.id,
+      x: (c.fall!.origin ?? c.fall!.position).x,
+      z: (c.fall!.origin ?? c.fall!.position).z,
+    }));
 }

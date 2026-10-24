@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import { cargoDropLocations } from '../src/game/fallCargo.ts';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {
@@ -147,4 +148,17 @@ test('airborne cargo is pushed aside by a grounded box without moving the ground
   assert.ok(
     Math.hypot(next[1].fall!.position.x, next[1].fall!.position.z) > 0.4,
   );
+});
+
+test('drop markers stay at the departure point, occur once per box, and clear on reset', () => {
+  let items = createCargoLayout(1);
+  items[0].position.x = BED.width;
+  items = updateCargoFalls(items, truck);
+  const markers = cargoDropLocations(items);
+  assert.equal(markers.length, 1);
+  for (let i = 0; i < 120; i++)
+    items = updateCargoFalls(items, { ...truck, x: 1000 });
+  assert.deepEqual(cargoDropLocations(items), markers);
+  assert.notEqual(items[0].fall!.position.x, markers[0].x);
+  assert.deepEqual(cargoDropLocations(createCargoLayout()), []);
 });

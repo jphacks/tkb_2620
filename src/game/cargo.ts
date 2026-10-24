@@ -32,6 +32,8 @@ export type CargoItem = {
     position: { x: number; y: number; z: number };
     velocity: { x: number; y: number; z: number };
     elapsed: number;
+    /** Fixed location where the box left the bed (for minimap). */
+    origin?: { x: number; z: number };
     yaw: number;
   };
   /** Small lift above the bed when climbing a rail. */

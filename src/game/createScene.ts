@@ -7,7 +7,11 @@ import { createCargo } from './createCargo';
 import { createCargoLayout, remainingCargo } from './cargo';
 import { VEHICLE } from './constants';
 import { slideCargo, CARGO_PHYSICS } from './slideCargo';
-import { updateCargoFalls, CARGO_GROUND_Y } from './fallCargo';
+import {
+  updateCargoFalls,
+  CARGO_GROUND_Y,
+  cargoDropLocations,
+} from './fallCargo';
 import { createLapTrack, startLap, updateLap, type LapState } from './lap';
 import {
   initialTruckState,
@@ -18,6 +22,8 @@ import {
 } from './updateGame';
 import { isFiniteTruckState, sanitizeDriveInput } from './safety';
 export type DrivingStatus = {
+  position: { x: number; z: number };
+  droppedCargo: { id: number; x: number; z: number }[];
   speed: number;
   distance: number;
   collided: boolean;
@@ -295,6 +301,8 @@ export function createScene(
     if (now - lastStatus > 100 || lap.finished !== reportedFinished) {
       reportedFinished = lap.finished;
       onStatus({
+        position: { x: state.x, z: state.z },
+        droppedCargo: cargoDropLocations(cargo),
         cargoRemaining: remainingCargo(cargo),
         cargoTotal: cargo.length,
         speed: state.speed,
