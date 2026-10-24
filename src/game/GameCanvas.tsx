@@ -48,6 +48,8 @@ export function GameCanvas({
     active: false,
     time: 0,
     finished: false,
+    cargoRemaining: 0,
+    cargoTotal: 0,
   });
   const courseLength = useMemo(
     () => createLapTrack(course.points, course.roadWidth).length,
@@ -67,8 +69,8 @@ export function GameCanvas({
         courseName: info.current.courseName,
         time: next.time,
         courseLength: info.current.courseLength,
-        cargoRemaining: 0, // 積荷は #15〜#17 で追加
-        cargoTotal: 0,
+        cargoRemaining: next.cargoRemaining,
+        cargoTotal: next.cargoTotal,
         finishedAt: Date.now(),
       };
       setResult(resultRef.current);

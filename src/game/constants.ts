@@ -1,4 +1,4 @@
-/** Provisional game-space values; align vehicle/cargo dimensions before #15. */
+/** Provisional game-space values. Cargo and bed sizes follow this truck (see cargo.ts, #15). */
 export const VEHICLE = {
   width: 1.2,
   length: 2.4,
