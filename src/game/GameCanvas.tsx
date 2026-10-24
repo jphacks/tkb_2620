@@ -1,17 +1,23 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { CourseData } from '../../shared/course';
 import type { createScene, DrivingStatus } from './createScene';
 import type { DriveInput } from './updateGame';
-import { formatTime } from './lap';
+import { createLapTrack, formatTime } from './lap';
+import type { DeliveryResult } from './score';
 export function GameCanvas({
   course,
   toolbarExtra,
   getRemoteInput,
+  courseName = 'コース',
+  onFinish,
 }: {
   course: CourseData;
   toolbarExtra?: ReactNode;
   /** スマホからの入力（#14） */
   getRemoteInput?: () => DriveInput | null;
+  courseName?: string;
+  /** ゴールしたときの配送結果（#21） */
+  onFinish?: (result: DeliveryResult) => void;
 }) {
   // 3D画面を作り直さずに最新の関数を使う
   const remoteInput = useRef(getRemoteInput);
@@ -30,6 +36,44 @@ export function GameCanvas({
     time: 0,
     finished: false,
   });
+  const courseLength = useMemo(
+    () => createLapTrack(course.points, course.roadWidth).length,
+    [course],
+  );
+  const finishRef = useRef(onFinish);
+  useEffect(() => {
+    finishRef.current = onFinish;
+  }, [onFinish]);
+  const [result, setResult] = useState<DeliveryResult | null>(null);
+  // ゲームから届いた状態を受け取る。ゴールした瞬間に配送結果を1回だけ作る
+  const resultRef = useRef<DeliveryResult | null>(null);
+  const handleStatus = useRef((next: DrivingStatus) => {
+    setStatus(next);
+    if (next.finished && !resultRef.current) {
+      resultRef.current = {
+        courseName: info.current.courseName,
+        time: next.time,
+        courseLength: info.current.courseLength,
+        cargoRemaining: 0, // 積荷は #15〜#17 で追加
+        cargoTotal: 0,
+        finishedAt: Date.now(),
+      };
+      setResult(resultRef.current);
+    } else if (!next.finished && resultRef.current) {
+      resultRef.current = null;
+      setResult(null);
+    }
+  });
+  const info = useRef({ courseName, courseLength });
+  useEffect(() => {
+    info.current = { courseName, courseLength };
+  }, [courseName, courseLength]);
+  // 「配送完了！」を2秒見せてから結果画面へ
+  useEffect(() => {
+    if (!result) return;
+    const timer = window.setTimeout(() => finishRef.current?.(result), 2000);
+    return () => window.clearTimeout(timer);
+  }, [result]);
   useEffect(() => {
     const element = container.current;
     if (!element) return;
@@ -40,7 +84,7 @@ export function GameCanvas({
         scene.current = createScene(
           element,
           course,
-          setStatus,
+          (next) => handleStatus.current(next),
           () => remoteInput.current?.() ?? null,
         );
         setFollowing(true);
@@ -110,14 +154,19 @@ export function GameCanvas({
         <div className="goal-overlay" role="status">
           <p className="goal-title">配送完了！</p>
           <p className="goal-time">{formatTime(status.time)}</p>
-          <button
-            onClick={() => {
-              scene.current?.resetTruck();
-              container.current?.focus();
-            }}
-          >
-            もう一度
-          </button>
+          <div className="goal-actions">
+            {onFinish && result && (
+              <button onClick={() => onFinish(result)}>結果を見る</button>
+            )}
+            <button
+              onClick={() => {
+                scene.current?.resetTruck();
+                container.current?.focus();
+              }}
+            >
+              もう一度
+            </button>
+          </div>
         </div>
       )}
       {error && <p role="alert">{error}</p>}
