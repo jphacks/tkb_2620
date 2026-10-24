@@ -94,10 +94,14 @@ export function updateGame(
           ? VEHICLE.acceleration * throttle -
             VEHICLE.rollingDeceleration * (1 - throttle)
           : -VEHICLE.rollingDeceleration;
-    const speed = Math.max(
-      0,
-      Math.min(VEHICLE.maxSpeed, next.speed + accel * dt),
-    );
+    let speed = next.speed + accel * dt;
+    // クリープ現象：ブレーキを踏んでいなければ、AT車のようにゆっくり前へ進む
+    if (brake === 0 && speed < VEHICLE.creepSpeed)
+      speed = Math.min(
+        VEHICLE.creepSpeed,
+        Math.max(speed, next.speed + VEHICLE.creepAcceleration * dt),
+      );
+    speed = Math.max(0, Math.min(VEHICLE.maxSpeed, speed));
     const yaw =
       next.yaw + ((next.steering * speed) / VEHICLE.minTurnRadius) * dt;
     const candidate = {
