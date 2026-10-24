@@ -85,16 +85,25 @@ export function updateGame(
       (target - next.steering) * (1 - Math.exp(-VEHICLE.steeringResponse * dt));
     const throttle = unit(input.throttle),
       brake = unit(input.brake);
-    // ブレーキ優先。踏み込みが浅いほど、自然な減速との差し引きで加速が弱くなる
+    // ブレーキ優先。アクセルは踏み込み具合で目標の速さを決める（一番奥で最高速）。
+    // 目標より遅ければ加速、速ければエンジンブレーキで目標まで落とす
+    const targetSpeed = throttle * VEHICLE.maxSpeed;
     const accel =
       brake > 0
         ? -VEHICLE.brakeDeceleration * brake -
           VEHICLE.rollingDeceleration * (1 - brake)
         : throttle > 0
-          ? VEHICLE.acceleration * throttle -
-            VEHICLE.rollingDeceleration * (1 - throttle)
+          ? next.speed < targetSpeed
+            ? VEHICLE.acceleration
+            : -VEHICLE.engineBraking
           : -VEHICLE.rollingDeceleration;
     let speed = next.speed + accel * dt;
+    // 目標の速さを行き過ぎない
+    if (brake === 0 && throttle > 0)
+      speed =
+        next.speed < targetSpeed
+          ? Math.min(speed, targetSpeed)
+          : Math.max(speed, targetSpeed);
     // クリープ現象：ブレーキを踏んでいなければ、AT車のようにゆっくり前へ進む
     if (brake === 0 && speed < VEHICLE.creepSpeed)
       speed = Math.min(
