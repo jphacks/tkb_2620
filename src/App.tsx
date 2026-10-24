@@ -6,15 +6,11 @@ import { useRoom } from './socket/useRoom';
 import HomePage from './pages/HomePage';
 import CapturePage from './pages/CapturePage';
 import GamePage from './pages/GamePage';
-import SteeringPage from './pages/SteeringPage';
-import PedalPage from './pages/PedalPage';
 import ResultPage from './pages/ResultPage';
 const pages = [
   { label: 'ホーム', View: HomePage },
   { label: '写真', View: null },
   { label: 'ゲーム', View: GamePage },
-  { label: 'ハンドル', View: SteeringPage },
-  { label: 'ペダル', View: PedalPage },
   { label: '結果', View: ResultPage },
 ];
 export default function App() {
@@ -23,7 +19,7 @@ export default function App() {
   const { connected } = useRoom();
   const View = pages[active].View;
   return (
-    <div className="app">
+    <div className={active === 2 ? 'app app-game' : 'app'}>
       <header>
         <a href="/" className="brand">
           BODY ROAD
