@@ -1350,15 +1350,25 @@ button:disabled {
 .saved-course-body small {
   opacity: 0.75;
 }
-.memory-meter {
-  height: 6px;
-  border-radius: 3px;
-  background: #e6e2d6;
-  overflow: hidden;
+/* 思い出度で色あせる（#30）。--fade：0 遊んだばかり 〜 1 忘れられる直前。よく見ると気づく程度にする */
+.saved-course > .course-thumbnail,
+.saved-course-body {
+  opacity: calc(1 - var(--fade, 0) * 0.4);
+  filter: saturate(calc(1 - var(--fade, 0) * 0.6));
+  transition:
+    opacity 0.6s,
+    filter 0.6s;
 }
-.memory-meter span {
-  display: block;
-  height: 100%;
+.saved-course-tag {
+  display: inline-block;
+  white-space: nowrap;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #e6e2d6;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
 }
 @media (max-width: 520px) {
   .saved-course {

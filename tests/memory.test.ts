@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
   FORGOTTEN_AFTER_DAYS,
   FORGOTTEN_SCORE,
+  memoryFade,
   memoryScore,
   retention,
   sortByMemory,
@@ -82,4 +83,14 @@ test('time ago is shown in friendly units (#28)', () => {
   assert.equal(timeAgo('2026-10-24T11:45:00Z', now), '15分前');
   assert.equal(timeAgo('2026-10-24T09:00:00Z', now), '3時間前');
   assert.equal(timeAgo('2026-10-21T12:00:00Z', now), '3日前');
+});
+
+test('cards fade from 0 right after playing to 1 when forgotten (#30)', () => {
+  assert.equal(memoryFade(100), 0);
+  near(memoryFade(FORGOTTEN_SCORE), 1, 1e-9);
+  assert.equal(memoryFade(0), 1);
+  assert.equal(memoryFade(Number.NaN), 1);
+  const hour = memoryFade(retention(60));
+  const day = memoryFade(retention(24 * 60));
+  assert.ok(0 < hour && hour < day && day < 1);
 });

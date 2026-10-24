@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { Button } from './Button';
 import { CourseThumbnail } from './CourseThumbnail';
 import { RankingTable } from './RankingTable';
@@ -7,9 +7,14 @@ import {
   listCourses,
   listTopRankings,
 } from '../db/supabase';
-import type { RankingEntry, SavedCourse } from '../db/courseRow';
+import {
+  SAMPLE_COURSE_ID,
+  type RankingEntry,
+  type SavedCourse,
+} from '../db/courseRow';
 import {
   FORGOTTEN_AFTER_DAYS,
+  memoryFade,
   memoryScore,
   sortByMemory,
   timeAgo,
@@ -26,7 +31,8 @@ type State =
 
 /**
  * 保存したコースの一覧（#25 #28）。思い出度（Memory Score、#30）の高い順に並べ（#31）、
- * コースごとのTOP3を出す（#29）。31日遊ばれないコースはDBで一覧から外れる（#32）。
+ * 遊ばれていないコースほどカードを色あせさせる（数字は出さない）。コースごとのTOP3を出す（#29）。
+ * 31日遊ばれないコースはDBで一覧から外れる（#32）。サンプルは忘れられないので、色あせさせず最後に置く。
  */
 export function SavedCourses({
   onPlay,
@@ -84,8 +90,8 @@ export function SavedCourses({
     <div className="card saved-courses">
       <h2>思い出のコース</h2>
       <p className="saved-courses-note">
-        遊ぶほど思い出に残り、遊ばないと少しずつ忘れていきます（エビングハウスの忘却曲線）。
-        {FORGOTTEN_AFTER_DAYS}日遊ばれないコースは一覧から消えます。
+        遊ばないコースは少しずつ色あせていき（エビングハウスの忘却曲線）、
+        {FORGOTTEN_AFTER_DAYS}日遊ばれないと一覧から消えます。
       </p>
       {state.kind === 'loading' && <p>読み込み中…</p>}
       {state.kind === 'error' && (
@@ -104,32 +110,34 @@ export function SavedCourses({
       {state.kind === 'ready' &&
         (state.courses.length ? (
           <ul className="saved-course-list">
-            {sortByMemory(state.courses, now).map((course) => {
-              const memory = memoryScore(course, now);
+            {[
+              ...sortByMemory(
+                state.courses.filter((c) => c.id !== SAMPLE_COURSE_ID),
+                now,
+              ),
+              ...state.courses.filter((c) => c.id === SAMPLE_COURSE_ID),
+            ].map((course) => {
+              const isSample = course.id === SAMPLE_COURSE_ID;
+              const fade = isSample ? 0 : memoryFade(memoryScore(course, now));
               return (
-                <li key={course.id} className="saved-course">
+                <li
+                  key={course.id}
+                  className={isSample ? 'saved-course sample' : 'saved-course'}
+                  style={{ '--fade': fade } as CSSProperties}
+                >
                   <CourseThumbnail course={course.data} />
                   <div className="saved-course-body">
-                    <p className="saved-course-name">{course.name}</p>
-                    <div
-                      className="memory-meter"
-                      role="meter"
-                      aria-label="思い出度"
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={Math.round(memory)}
-                    >
-                      <span
-                        style={{
-                          width: `${memory}%`,
-                          background: course.data.themeColor,
-                        }}
-                      />
-                    </div>
+                    <p className="saved-course-name">
+                      {course.name}
+                      {isSample && (
+                        <span className="saved-course-tag">いつでも遊べる</span>
+                      )}
+                    </p>
                     <small>
-                      思い出度 {Math.round(memory)} ・ 最後に遊んだ{' '}
-                      {timeAgo(course.lastPlayedAt ?? course.createdAt, now)} ・{' '}
-                      {course.playCount}回
+                      {isSample ? '' : '最後に遊んだ '}
+                      {isSample
+                        ? `${course.playCount}回`
+                        : `${timeAgo(course.lastPlayedAt ?? course.createdAt, now)} ・ ${course.playCount}回`}
                     </small>
                     <RankingTable
                       entries={state.rankings.get(course.id) ?? []}

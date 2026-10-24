@@ -35,6 +35,16 @@ export function memoryScore(
 /** 「忘れられた」とみなす思い出度（31日後の値、約21） */
 export const FORGOTTEN_SCORE = retention(FORGOTTEN_AFTER_DAYS * 24 * 60);
 
+/**
+ * 思い出度 → 色あせの度合い（0：遊んだばかり 〜 1：忘れられる直前）。一覧のカードを薄くするのに使う（#30）。
+ * 遊んだ直後（100）を0、忘れられたとみなす値（約21）を1にする。
+ */
+export function memoryFade(score: number): number {
+  if (!Number.isFinite(score)) return 1;
+  const fade = (100 - score) / (100 - FORGOTTEN_SCORE);
+  return Math.min(1, Math.max(0, fade));
+}
+
 /** 思い出度の高い順（＝最近遊ばれた順）に並べた新しい配列 */
 export function sortByMemory<
   T extends { lastPlayedAt: string | null; createdAt: string },
