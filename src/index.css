@@ -636,7 +636,7 @@ button:disabled {
 }
 .controller-note {
   position: absolute;
-  bottom: 12px;
+  bottom: 36px;
   left: 16px;
   right: 16px;
   margin: 0;
@@ -717,7 +717,7 @@ button:disabled {
 .controller-steering .controller-menu {
   width: min(260px, 45%);
 }
-/* 毎フレーム角度が変わるので、アニメーションは付けない（残像の原因になる） */
+/* 絵はスマホに対して回さない。切れ具合は下のメーターで見せる */
 .wheel {
   position: absolute;
   top: 50%;
@@ -730,7 +730,6 @@ button:disabled {
   border-radius: 50%;
   border: 16px solid #294b37;
   background: transparent;
-  will-change: transform;
 }
 .wheel::after {
   content: '';
@@ -745,6 +744,33 @@ button:disabled {
 .wheel:disabled,
 .pedals:disabled {
   opacity: 0.6;
+}
+.steer-meter {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  width: min(60dvh, 360px);
+  height: 8px;
+  margin-left: calc(min(60dvh, 360px) / -2);
+  border-radius: 4px;
+  background: #e6e2d6;
+}
+.steer-meter::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: #27382f;
+}
+.steer-meter span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 4px;
+  background: #efa747;
 }
 .wheel-mark {
   position: absolute;
@@ -812,7 +838,7 @@ button:disabled {
 }
 .pedal-hint {
   position: absolute;
-  bottom: 40px;
+  bottom: 72px;
   left: 0;
   right: 0;
   margin: 0;

@@ -64,8 +64,8 @@ export default function SteeringPage({
     >
       <button
         type="button"
+        // スマホそのものがハンドルなので、絵はスマホに対して回さない（横棒がいつもスマホの横方向と揃う）
         className="wheel"
-        style={{ transform: `rotate(${-steering * 90}deg)` }}
         aria-label={
           running
             ? `ハンドル ${Math.round(-steering * 100)}%（右がプラス）`
@@ -77,6 +77,16 @@ export default function SteeringPage({
         <span className="wheel-mark" />
         {!running && <span className="start-chip">タップで開始</span>}
       </button>
+      {/* どれだけ切れているか（真ん中から左右へ伸びる） */}
+      <div className="steer-meter" aria-hidden="true">
+        <span
+          style={
+            steering >= 0
+              ? { right: '50%', width: `${steering * 50}%` }
+              : { left: '50%', width: `${-steering * 50}%` }
+          }
+        />
+      </div>
     </ControllerScreen>
   );
 }
