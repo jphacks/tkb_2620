@@ -4,6 +4,8 @@
  */
 export type DeliveryResult = {
   courseName: string;
+  /** DB のコースの id。ランキングへの登録に使う（#29）。保存できていなければなし */
+  courseId?: string;
   /** 一周にかかった秒数 */
   time: number;
   /** コース一周の長さ（基準タイムの計算に使う） */

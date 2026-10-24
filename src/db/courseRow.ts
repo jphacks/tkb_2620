@@ -76,3 +76,59 @@ export function fromRow(row: CourseRow): SavedCourse | null {
     lastPlayedAt: row.last_played_at ?? null,
   };
 }
+
+/** rankings テーブルの1行（読むとき） */
+export type RankingRow = {
+  course_id: string;
+  display_name: string;
+  score: number;
+  clear_time_ms: number;
+  remaining_cargo: number;
+  cargo_total: number;
+  created_at: string;
+};
+
+/** ランキングの1件。画面ではこの形で扱う */
+export type RankingEntry = {
+  displayName: string;
+  score: number;
+  clearTimeMs: number;
+  remainingCargo: number;
+  cargoTotal: number;
+  createdAt: string;
+};
+
+/** ランキングの名前の上限（DB の制約に合わせる） */
+export const DISPLAY_NAME_MAX = 12;
+
+/** 名前の前後の空白を除き、12文字に切る。空なら空文字（登録させない） */
+export function normalizeDisplayName(name: string): string {
+  return [...(name ?? '').trim()].slice(0, DISPLAY_NAME_MAX).join('');
+}
+
+/** コースごとに分け、スコアが高い→タイムが短い→先に出した順に上位3件にする（#29） */
+export function groupTopRankings(
+  rows: readonly RankingRow[],
+): Map<string, RankingEntry[]> {
+  const byCourse = new Map<string, RankingEntry[]>();
+  const sorted = [...rows].sort(
+    (a, b) =>
+      b.score - a.score ||
+      a.clear_time_ms - b.clear_time_ms ||
+      Date.parse(a.created_at) - Date.parse(b.created_at),
+  );
+  for (const row of sorted) {
+    const list = byCourse.get(row.course_id) ?? [];
+    if (list.length < 3)
+      list.push({
+        displayName: row.display_name,
+        score: row.score,
+        clearTimeMs: row.clear_time_ms,
+        remainingCargo: row.remaining_cargo,
+        cargoTotal: row.cargo_total,
+        createdAt: row.created_at,
+      });
+    byCourse.set(row.course_id, list);
+  }
+  return byCourse;
+}

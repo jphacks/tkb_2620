@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   fromRow,
+  groupTopRankings,
   normalizeCourseName,
+  normalizeDisplayName,
   toInsertRow,
   UNNAMED_COURSE,
   type CourseRow,
@@ -84,4 +86,44 @@ test('broken rows are not handed to the game (#25 #22)', () => {
     fromRow(row({ road_width: '6' as unknown as number }))?.data.roadWidth,
     6,
   );
+});
+
+test('rankings are grouped per course, best score then fastest, top 3 only (#29)', () => {
+  const r = (
+    course_id: string,
+    name: string,
+    score: number,
+    ms: number,
+    at: string,
+  ) => ({
+    course_id,
+    display_name: name,
+    score,
+    clear_time_ms: ms,
+    remaining_cargo: 3,
+    cargo_total: 3,
+    created_at: at,
+  });
+  const top = groupTopRankings([
+    r('a', '3位', 80, 30000, '2026-10-24T10:00:00Z'),
+    r('a', '1位', 95, 40000, '2026-10-24T10:00:00Z'),
+    r('a', '2位', 80, 29000, '2026-10-24T10:00:00Z'),
+    r('a', '4位', 80, 30000, '2026-10-24T11:00:00Z'),
+    r('b', 'B1', 50, 1000, '2026-10-24T10:00:00Z'),
+  ]);
+  assert.deepEqual(
+    top.get('a')?.map((e) => e.displayName),
+    ['1位', '2位', '3位'],
+  );
+  assert.deepEqual(
+    top.get('b')?.map((e) => e.displayName),
+    ['B1'],
+  );
+  assert.equal(top.get('c'), undefined);
+});
+
+test('ranking names are trimmed and cut to 12 characters; blank is rejected (#29)', () => {
+  assert.equal(normalizeDisplayName('  あやか '), 'あやか');
+  assert.equal(normalizeDisplayName('あ'.repeat(15)), 'あ'.repeat(12));
+  assert.equal(normalizeDisplayName('   '), '');
 });
