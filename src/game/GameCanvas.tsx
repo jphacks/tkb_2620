@@ -5,6 +5,7 @@ import type { DriveInput } from './updateGame';
 import { createLapTrack, formatTime } from './lap';
 import type { DeliveryResult } from './score';
 import type { CapturedPerson } from '../capture/capture';
+import { GameHud } from '../components/GameHud';
 import { CourseMinimap } from '../components/CourseMinimap';
 export function GameCanvas({
   course,
@@ -150,32 +151,30 @@ export function GameCanvas({
     >
       <div className="course-toolbar">
         <div className="toolbar-info">
-          <span>↑ / W 加速 / ↓ / S / Space ブレーキ / ← → / A D ハンドル</span>
-          <div className="drive-status">
-            <span>
-              積荷 {status.cargoRemaining} / {status.cargoTotal} 個
-            </span>
-            <span>
-              タイム <strong>{formatTime(status.time)}</strong>
-            </span>
-            <span>
-              速度 {status.speed.toFixed(1)} <small>unit/s</small>
-            </span>
-            <span>
-              走行距離 {status.distance.toFixed(1)} <small>unit</small>
-            </span>
-            <span>
-              {status.finished
+          <GameHud
+            time={status.time}
+            cargoRemaining={status.cargoRemaining}
+            cargoTotal={status.cargoTotal}
+            speed={status.speed}
+            message={
+              status.finished
                 ? '配送完了！'
                 : status.collided
                   ? '壁に接触 — RでSTARTへ'
                   : status.active
                     ? '走行中'
-                    : '画面をクリックして操作'}
-            </span>
-          </div>
+                    : '画面をクリックして操作'
+            }
+          />
+          <details className="drive-help">
+            <summary>操作方法</summary>
+            <p>
+              ↑ / W：加速 / ↓ / S / Space：ブレーキ
+              <br />← → / A D：ハンドル / R：STARTへ
+            </p>
+          </details>
         </div>
-        {toolbarExtra}
+        <div className="hud-extras">{toolbarExtra}</div>
         <div className="drive-actions">
           <button
             onClick={() => {

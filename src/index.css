@@ -1135,3 +1135,157 @@ button:disabled {
     right: 8px;
   }
 }
+
+/* Issue #20: compact HUD, keeping the truck and road clear. */
+.game-hud {
+  pointer-events: none;
+  max-width: 540px;
+  width: 100%;
+}
+.hud-readouts {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 6px;
+  margin: 0;
+}
+.hud-readouts > div {
+  padding: 10px 14px;
+  border: 1px solid #ffffff30;
+  border-radius: 12px;
+  background: #203d30ed;
+  color: #fff;
+}
+.hud-readouts dt {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #d2dfd4;
+  white-space: nowrap;
+}
+.hud-readouts dt span {
+  font-size: 10px;
+  margin-left: 4px;
+  letter-spacing: 0;
+}
+.hud-readouts dd {
+  margin: 4px 0 0;
+  font-size: 27px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.hud-readouts dd small {
+  font-size: 12px;
+  font-weight: 500;
+}
+.hud-readouts > .hud-cargo-reduced {
+  border-color: #f5c557;
+}
+.hud-cargo-reduced dd {
+  color: #ffdf87;
+}
+.hud-message {
+  display: inline-block;
+  margin: 6px 0 0;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #ffffffed;
+  color: #294b37;
+  font-size: 12px;
+}
+.app-game .course-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 16px;
+}
+.app-game .toolbar-info {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  min-width: 0;
+}
+.hud-extras {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+.app-game .drive-actions {
+  grid-column: 2;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.drive-help,
+.hud-connection {
+  pointer-events: auto;
+  font-size: 12px;
+  color: #294b37;
+  border-radius: 10px;
+  background: #fffffff2;
+}
+.drive-help summary,
+.hud-connection summary {
+  cursor: pointer;
+  padding: 8px 12px;
+}
+.drive-help p {
+  margin: 0;
+  padding: 0 12px 10px;
+  line-height: 1.8;
+}
+.hud-connection .room-panel {
+  padding: 4px 10px 10px;
+}
+@media (max-width: 650px) {
+  .app-game .course-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app-game .toolbar-info {
+    grid-row: auto;
+    width: 100%;
+    gap: 5px;
+  }
+  .hud-readouts > div {
+    padding: 8px 10px;
+  }
+  .hud-readouts dd {
+    font-size: 21px;
+  }
+  .hud-readouts dt span {
+    display: none;
+  }
+  .hud-readouts dd small {
+    font-size: 10px;
+  }
+  .hud-extras {
+    grid-column: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .app-game .drive-actions {
+    grid-column: 1;
+    justify-content: flex-start;
+  }
+  .app-game .course-caption {
+    display: none;
+  }
+  .course-minimap {
+    bottom: 12px;
+  }
+}
+@media (max-height: 500px) {
+  .app-game .course-minimap {
+    width: 140px;
+    bottom: 12px;
+  }
+  .app-game .course-caption {
+    display: none;
+  }
+  .hud-readouts > div {
+    padding: 6px 10px;
+  }
+  .hud-readouts dd {
+    font-size: 20px;
+  }
+}

@@ -53,7 +53,12 @@ export default function GamePage({
         toolbarExtra={
           <>
             {name}
-            {roomSlot}
+            {roomSlot && (
+              <details className="hud-connection">
+                <summary>スマホ接続・QRコード</summary>
+                {roomSlot}
+              </details>
+            )}
           </>
         }
         getRemoteInput={getRemoteInput}
