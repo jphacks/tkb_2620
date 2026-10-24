@@ -12,6 +12,7 @@ import {
   type DriveInput,
   type WallSegment,
 } from './updateGame';
+import { isFiniteTruckState, sanitizeDriveInput } from './safety';
 export type DrivingStatus = {
   speed: number;
   distance: number;
@@ -28,6 +29,8 @@ export function createScene(
   onStatus: (status: DrivingStatus) => void = () => {},
   /** スマホからの入力（#14）。届いていなければ null */
   getRemoteInput: () => DriveInput | null = () => null,
+  /** true の間はトラックを止め、タイムも進めない（スマホの通信切断など、#22） */
+  isPaused: () => boolean = () => false,
 ) {
   const { group, edges } = createRoad(course);
   const walls: WallSegment[] = [];
@@ -202,10 +205,16 @@ export function createScene(
     if (disposed) return;
     const elapsed = Math.min((now - previous) / 1000, 0.1);
     previous = now;
-    // スマホの入力はPCの画面にフォーカスがなくても効く
-    const remote = getRemoteInput();
+    // スマホの入力はPCの画面にフォーカスがなくても効く。値は念のため範囲内に丸める（#22）
+    const received = getRemoteInput();
+    const remote = received ? sanitizeDriveInput(received) : null;
+    const paused = isPaused();
+    if (paused && state.speed > 0) {
+      state = { ...state, speed: 0 };
+      clearInput();
+    }
     // ゴールしたら「もう一度」まで止める
-    if (!document.hidden && !lap.finished && (active || remote)) {
+    if (!paused && !document.hidden && !lap.finished && (active || remote)) {
       const keyboard: DriveInput = active
         ? {
             throttle: Number(keys.has('ArrowUp') || keys.has('KeyW')),
@@ -230,6 +239,8 @@ export function createScene(
         elapsed,
         walls,
       );
+      // それでも状態が壊れていたらSTARTからやり直す（#22）
+      if (!isFiniteTruckState(state)) resetTruck();
       if (state.collided) collisionUntil = now + 650;
       // タイマーは動き出した瞬間から。画面が隠れている間は進まない
       if (state.speed > 0) started = true;
@@ -251,7 +262,7 @@ export function createScene(
         speed: state.speed,
         distance: state.distance,
         collided: now < collisionUntil,
-        active: active || remote !== null,
+        active: !paused && (active || remote !== null),
         time: raceTime,
         finished: lap.finished,
       });

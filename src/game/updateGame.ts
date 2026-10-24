@@ -1,5 +1,6 @@
 import type { CourseData, CoursePoint } from '../../shared/course';
-import { VEHICLE, FIXED_STEP } from './constants';
+import { VEHICLE, FIXED_STEP } from './constants.ts';
+import { isFiniteTruckState } from './safety.ts';
 export type WallSegment = { a: CoursePoint; b: CoursePoint };
 /** throttle・brake は 0〜1（キーボードは 0 か 1）、steering は -1（右）〜1（左）。 */
 export type DriveInput = {
@@ -128,5 +129,8 @@ export function updateGame(
     candidate.distance += speed * dt;
     next = candidate;
   }
+  // 計算が壊れても（NaN・無限大）位置を飛ばさず、その場で止める（#22）
+  if (!isFiniteTruckState(next))
+    return { ...state, speed: 0, steering: 0, collided: false };
   return next;
 }
