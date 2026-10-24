@@ -19,7 +19,8 @@
     "test:colors": "node --test tests/course-colors.test.ts",
     "test:course": "node --test tests/generate-course.test.ts",
     "test:controls": "node --test tests/controls.test.ts",
-    "test:lap": "node --test tests/lap.test.ts"
+    "test:lap": "node --test tests/lap.test.ts",
+    "test:score": "node --test tests/score.test.ts"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.1",

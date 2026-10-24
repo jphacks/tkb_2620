@@ -4,6 +4,7 @@ import { Button } from './components/Button';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { RoomPanel } from './components/RoomPanel';
 import { useRoom } from './socket/useRoom';
+import type { DeliveryResult } from './game/score';
 import { useRemoteInput } from './socket/useRemoteInput';
 import type { ControllerRole } from '../shared/socket';
 import type { CourseData } from '../shared/course';
@@ -22,6 +23,7 @@ const pages = [
   { label: '結果', View: ResultPage },
 ];
 const GAME_PAGE = 2;
+const RESULT_PAGE = 3;
 
 // QRコードのURL（?room=XXXX&role=steering|pedal）から参加情報を読む
 function readJoinParams(): { roomId: string; role: ControllerRole } | null {
@@ -47,6 +49,8 @@ export default function App() {
     data: CourseData;
     name: string;
   } | null>(null);
+  // 直近の配送結果（#21）。ゴールすると結果画面へ移る
+  const [result, setResult] = useState<DeliveryResult | null>(null);
   const { connected, room, role, error, createRoom, joinRoom } = useRoom();
   const getRemoteInput = useRemoteInput(room);
   const [join] = useState(readJoinParams);
@@ -119,7 +123,13 @@ export default function App() {
             courseName={course?.name}
             roomSlot={<RoomPanel connected={connected} room={room} />}
             getRemoteInput={getRemoteInput}
+            onFinish={(finished) => {
+              setResult(finished);
+              setActive(RESULT_PAGE);
+            }}
           />
+        ) : active === RESULT_PAGE ? (
+          <ResultPage result={result} onRetry={() => setActive(GAME_PAGE)} />
         ) : View ? (
           <View />
         ) : photoStep === 'course' && captured ? (

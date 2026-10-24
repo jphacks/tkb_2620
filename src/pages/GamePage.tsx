@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { CourseData } from '../../shared/course';
 import type { DriveInput } from '../game/updateGame';
+import type { DeliveryResult } from '../game/score';
 import { GameCanvas } from '../game/GameCanvas';
 import { sampleCourse } from '../fixtures/sampleCourse';
 export default function GamePage({
@@ -8,12 +9,15 @@ export default function GamePage({
   getRemoteInput,
   course,
   courseName,
+  onFinish,
 }: {
   roomSlot?: ReactNode;
   getRemoteInput?: () => DriveInput | null;
   /** The course made from the photo (Issue #10); the sample course until then. */
   course?: CourseData;
   courseName?: string;
+  /** ゴールしたときの配送結果（#21） */
+  onFinish?: (result: DeliveryResult) => void;
 }) {
   // Shown in the game toolbar so the 3D view keeps the full width.
   const name = (
@@ -32,6 +36,9 @@ export default function GamePage({
           </>
         }
         getRemoteInput={getRemoteInput}
+        // 伝票のコース名：写真から作ったコースは付けた名前（#10）
+        courseName={course ? courseName : 'サンプルコース（楕円）'}
+        onFinish={onFinish}
       />
     </section>
   );
