@@ -714,19 +714,51 @@ button:disabled {
 .hold-button.brake:active {
   background: #c8443b;
 }
-/* 横向きのハンドル画面は左右に並べて1画面に収める */
-@media (orientation: landscape) and (max-height: 500px) {
-  .controller-steering {
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    text-align: left;
-  }
-  .controller-steering .wheel {
-    grid-row: 1 / span 5;
-    grid-column: 2;
-  }
-  .controller-steering > :not(.wheel) {
-    grid-column: 1;
-    justify-self: stretch;
-  }
+/* ハンドル画面：縦ロックのまま横に持つので、画面全体を90°回して横長に使う */
+.controller-steering {
+  position: fixed;
+  z-index: 20;
+  top: 50%;
+  left: 50%;
+  width: 100vh;
+  height: 100vw;
+  width: 100dvh;
+  height: 100dvw;
+  padding: 12px 20px;
+  box-sizing: border-box;
+  background: #f8f6ef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+.controller-steering.flipped {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+.steering-side {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}
+.steering-side .hold-row {
+  max-width: none;
+}
+.steering-side .hold-button {
+  padding: 12px;
+}
+.steering-status {
+  margin: 0;
+  font-size: 12px;
+}
+.steering-flip {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.controller-steering .wheel {
+  flex: 0 0 auto;
+  width: min(42dvh, 78dvw);
 }

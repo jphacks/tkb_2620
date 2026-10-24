@@ -5,7 +5,12 @@ import { useControlSender, useScreenWakeLock } from '../hooks/useControlSender';
 import { useTilt } from '../hooks/useTilt';
 
 /** アクセル・ブレーキ担当：縦向きに持ち、奥へ倒すとアクセル、手前でブレーキ（#14） */
-export default function PedalPage({ joined }: { joined: boolean }) {
+export default function PedalPage({
+  joined,
+}: {
+  joined: boolean;
+  statusText?: string;
+}) {
   const tilt = useTilt('pedal');
   const [accel, setAccel] = useState(false),
     [brakeHeld, setBrakeHeld] = useState(false);
@@ -36,13 +41,14 @@ export default function PedalPage({ joined }: { joined: boolean }) {
         role="img"
         aria-label={`アクセル ${Math.round(throttle * 100)}%、ブレーキ ${Math.round(brake * 100)}%`}
       >
-        <div className="pedal-bar accel">
-          <span style={{ height: `${throttle * 100}%` }} />
-          <small>アクセル</small>
-        </div>
+        {/* ボタンと同じく、左がブレーキ・右がアクセル（実際の車と同じ） */}
         <div className="pedal-bar brake">
           <span style={{ height: `${brake * 100}%` }} />
           <small>ブレーキ</small>
+        </div>
+        <div className="pedal-bar accel">
+          <span style={{ height: `${throttle * 100}%` }} />
+          <small>アクセル</small>
         </div>
       </div>
       <TiltControls

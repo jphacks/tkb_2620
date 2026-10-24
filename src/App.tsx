@@ -71,18 +71,19 @@ export default function App() {
 
   if (join) {
     const Controller = join.role === 'steering' ? SteeringPage : PedalPage;
+    const statusText = error
+      ? error
+      : role && room
+        ? `ROOM ${room.roomId} に「${roleLabels[role]}」担当で参加中`
+        : `ROOM ${join.roomId} に参加しています...`;
     return (
       <div className="app">
         {header}
         <main>
           <p className="controller-room" role="status">
-            {error
-              ? error
-              : role && room
-                ? `ROOM ${room.roomId} に「${roleLabels[role]}」担当で参加中`
-                : `ROOM ${join.roomId} に参加しています...`}
+            {statusText}
           </p>
-          <Controller joined={Boolean(role && room)} />
+          <Controller joined={Boolean(role && room)} statusText={statusText} />
         </main>
       </div>
     );
