@@ -6,6 +6,7 @@ import { createTruck } from './createTruck';
 import { createCargo } from './createCargo';
 import { createCargoLayout, remainingCargo } from './cargo';
 import { VEHICLE } from './constants';
+import { slideCargo, CARGO_PHYSICS } from './slideCargo';
 import { createLapTrack, startLap, updateLap, type LapState } from './lap';
 import {
   initialTruckState,
@@ -48,6 +49,7 @@ export function createScene(
   let lap: LapState,
     raceTime = 0,
     started = false;
+  let physicsTime = 0;
   /** トラックの中心と先端（ゴールは先端がSTARTラインを越えたとき） */
   function truckPoints() {
     const half = VEHICLE.length / 2;
@@ -186,6 +188,7 @@ export function createScene(
   function resetTruck() {
     state = initialTruckState(course);
     // STARTに戻したら積み直す
+    physicsTime = 0;
     cargo = createCargoLayout();
     cargoView.sync(cargo);
     const { center, front } = truckPoints();
@@ -238,19 +241,29 @@ export function createScene(
               Number(keys.has('ArrowRight') || keys.has('KeyD')),
           }
         : { throttle: 0, brake: 0, steering: 0 };
-      state = updateGame(
-        state,
-        {
-          throttle: Math.max(keyboard.throttle, remote?.throttle ?? 0),
-          brake: Math.max(keyboard.brake, remote?.brake ?? 0),
-          steering: Math.max(
-            -1,
-            Math.min(1, keyboard.steering + (remote?.steering ?? 0)),
-          ),
-        },
-        elapsed,
-        walls,
-      );
+      physicsTime += elapsed;
+      while (physicsTime + 1e-10 >= CARGO_PHYSICS.step) {
+        physicsTime -= CARGO_PHYSICS.step;
+        const before = state;
+        state = updateGame(
+          state,
+          {
+            throttle: Math.max(keyboard.throttle, remote?.throttle ?? 0),
+            brake: Math.max(keyboard.brake, remote?.brake ?? 0),
+            steering: Math.max(
+              -1,
+              Math.min(1, keyboard.steering + (remote?.steering ?? 0)),
+            ),
+          },
+          CARGO_PHYSICS.step,
+          walls,
+        );
+        cargo = slideCargo(cargo, {
+          speed: (before.speed + state.speed) / 2,
+          acceleration: (state.speed - before.speed) / CARGO_PHYSICS.step,
+          yawRate: (state.yaw - before.yaw) / CARGO_PHYSICS.step,
+        });
+      }
       // それでも状態が壊れていたらSTARTからやり直す（#22）
       if (!isFiniteTruckState(state)) resetTruck();
       if (state.collided) collisionUntil = now + 650;
@@ -263,7 +276,8 @@ export function createScene(
         state = { ...state, speed: 0 };
         clearInput();
       }
-    }
+    } else physicsTime = 0;
+    cargoView.sync(cargo);
     syncTruck();
     if (following) follow(elapsed);
     renderer.render(scene, camera);
