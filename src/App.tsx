@@ -6,6 +6,8 @@ import { RoomPanel } from './components/RoomPanel';
 import { useRoom } from './socket/useRoom';
 import { useRemoteInput } from './socket/useRemoteInput';
 import type { ControllerRole } from '../shared/socket';
+import type { CourseData } from '../shared/course';
+import CourseReadyPage from './pages/CourseReadyPage';
 import HomePage from './pages/HomePage';
 import CapturePage from './pages/CapturePage';
 import GamePage from './pages/GamePage';
@@ -39,6 +41,12 @@ const roleLabels: Record<ControllerRole, string> = {
 export default function App() {
   const [active, setActive] = useState(0);
   const [captured, setCaptured] = useState<CapturedPerson | null>(null);
+  // Photo tab: 'capture' picks the photo, 'course' generates and names the course.
+  const [photoStep, setPhotoStep] = useState<'capture' | 'course'>('capture');
+  const [course, setCourse] = useState<{
+    data: CourseData;
+    name: string;
+  } | null>(null);
   const { connected, room, role, error, createRoom, joinRoom } = useRoom();
   const getRemoteInput = useRemoteInput(room);
   const [join] = useState(readJoinParams);
@@ -107,13 +115,35 @@ export default function App() {
       <main>
         {active === GAME_PAGE ? (
           <GamePage
+            course={course?.data}
+            courseName={course?.name}
             roomSlot={<RoomPanel connected={connected} room={room} />}
             getRemoteInput={getRemoteInput}
           />
         ) : View ? (
           <View />
+        ) : photoStep === 'course' && captured ? (
+          <CourseReadyPage
+            key={captured.capturedAt}
+            captured={captured}
+            onPlay={(data, name) => {
+              setCourse({ data, name });
+              setActive(GAME_PAGE);
+            }}
+            onRetake={() => {
+              setCaptured(null);
+              setPhotoStep('capture');
+            }}
+          />
         ) : (
-          <CapturePage captured={captured} onConfirm={setCaptured} />
+          <CapturePage
+            captured={captured}
+            onConfirm={(image) => {
+              setCaptured(image);
+              // Confirming a photo moves on to course generation; null only clears it.
+              if (image) setPhotoStep('course');
+            }}
+          />
         )}
         {error && <p className="error-text">{error}</p>}
       </main>
