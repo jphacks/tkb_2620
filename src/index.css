@@ -586,3 +586,16 @@ button:disabled {
     height: 52px;
   }
 }
+
+.course-color-bar {
+  height: 28px;
+  border-radius: 6px;
+  margin: 8px 0 4px;
+}
+.course-color-scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 16px;
+  font-size: 12px;
+}

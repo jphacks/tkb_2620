@@ -13,6 +13,10 @@ import {
   DEFAULT_CURVE_CORRECTION,
 } from '../image-processing/correctCurves';
 import type { CurveCorrectionResult } from '../image-processing/correctCurves';
+import { extractRepresentativeColors } from '../image-processing/extractColors';
+import type { ColorExtraction } from '../image-processing/extractColors';
+import { mapCourseColors } from '../image-processing/mapCourseColors';
+import type { CourseColors } from '../image-processing/mapCourseColors';
 import { useEffect, useRef, useState } from 'react';
 import type { CapturedPerson } from '../capture/capture';
 import { extractOuterContour } from '../image-processing/extractContour';
@@ -40,12 +44,34 @@ function sampleMask(clipped: boolean): BinaryPersonMask {
   data[48 * width + 40] = 0;
   return { data, width, height };
 }
+/** Synthetic photo for the sample figure: hair, skin, shirt, trousers (Issue #9 preview). */
+function sampleColors(mask: BinaryPersonMask, points: OutlinePoint[]) {
+  const data = new Uint8ClampedArray(mask.width * mask.height * 4);
+  for (let y = 0; y < mask.height; y++)
+    for (let x = 0; x < mask.width; x++) {
+      const color =
+        y < 12
+          ? [58, 38, 30]
+          : y < 28 || (y < 43 && (x < 29 || x >= 51))
+            ? [236, 190, 160]
+            : y < 62
+              ? [214, 64, 72]
+              : [52, 82, 160];
+      data.set([...color, 255], (y * mask.width + x) * 4);
+    }
+  return extractRepresentativeColors(
+    { width: mask.width, height: mask.height, data },
+    mask,
+    points.map((p) => ({ x: p.x * mask.width, y: p.y * mask.height })),
+  );
+}
 function InspectionCanvas({
   mask,
   points,
   blob,
   mode,
   sharp = [],
+  colors = [],
 }: {
   mask: BinaryPersonMask;
   points: OutlinePoint[];
@@ -57,9 +83,12 @@ function InspectionCanvas({
     | 'original'
     | 'resampled'
     | 'curvesBefore'
-    | 'curvesAfter';
+    | 'curvesAfter'
+    | 'courseColors';
   /** Indices of points drawn in red as sharp curves. */
   sharp?: number[];
+  /** Per-point #RRGGBB for the course colors view, same order as points. */
+  colors?: string[];
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -96,6 +125,35 @@ function InspectionCanvas({
           pixels.data.set([value, value, value, 255], i * 4);
         }
         context.putImageData(pixels, 0, 0);
+      }
+      if (mode === 'courseColors') {
+        // Each edge in the color of its starting point, thick like a wall.
+        context.lineWidth = Math.max(2, mask.width / 30);
+        context.lineCap = 'round';
+        points.forEach((p, i) => {
+          const q = points[(i + 1) % points.length];
+          context.strokeStyle = colors[i] ?? '#888';
+          context.beginPath();
+          context.moveTo(p.x * mask.width, p.y * mask.height);
+          context.lineTo(q.x * mask.width, q.y * mask.height);
+          context.stroke();
+        });
+        if (points[0]) {
+          context.fillStyle = '#ff2d2d';
+          context.strokeStyle = '#fff';
+          context.lineWidth = Math.max(0.5, mask.width / 200);
+          context.beginPath();
+          context.arc(
+            points[0].x * mask.width,
+            points[0].y * mask.height,
+            Math.max(1.5, mask.width / 50),
+            0,
+            Math.PI * 2,
+          );
+          context.fill();
+          context.stroke();
+        }
+        return;
       }
       if (mode !== 'mask' && points.length) {
         const path = new Path2D(
@@ -152,7 +210,7 @@ function InspectionCanvas({
     return () => {
       cancelled = true;
     };
-  }, [mask, points, blob, mode, sharp]);
+  }, [mask, points, blob, mode, sharp, colors]);
   return (
     <canvas
       ref={canvas}
@@ -162,15 +220,17 @@ function InspectionCanvas({
           ? '人物二値マスク。白が人物、黒が背景'
           : mode === 'resampled'
             ? '等間隔に配置した輪郭点'
-            : mode === 'curvesBefore'
-              ? '急カーブ補正前の輪郭。赤い点が半径の小さい急カーブ'
-              : mode === 'curvesAfter'
-                ? '急カーブ補正後の輪郭。赤い点は補正しきれなかった急カーブ'
-                : mode === 'original'
-                  ? '平滑化前の輪郭'
-                  : mode === 'outline'
-                    ? '平滑化後の輪郭'
-                    : '写真と抽出輪郭の重ね合わせ'
+            : mode === 'courseColors'
+              ? '補正後コースに割り当てた人物の色。赤い丸がSTART'
+              : mode === 'curvesBefore'
+                ? '急カーブ補正前の輪郭。赤い点が半径の小さい急カーブ'
+                : mode === 'curvesAfter'
+                  ? '急カーブ補正後の輪郭。赤い点は補正しきれなかった急カーブ'
+                  : mode === 'original'
+                    ? '平滑化前の輪郭'
+                    : mode === 'outline'
+                      ? '平滑化後の輪郭'
+                      : '写真と抽出輪郭の重ね合わせ'
       }
     />
   );
@@ -181,8 +241,11 @@ export function ContourInspection({
   onSmoothingChange,
   resampling,
   onResamplingChange,
+  colorExtraction,
 }: {
   photo: CapturedPerson | null;
+  /** Colors of the current photo (Issue #8); the sample figure makes its own. */
+  colorExtraction?: ColorExtraction | null;
   smoothing: SmoothingOptions;
   resampling: ResamplingOptions;
   onResamplingChange: (options: ResamplingOptions) => void;
@@ -240,6 +303,30 @@ export function ContourInspection({
         cause instanceof Error ? cause.message : '急カーブを補正できません。';
     }
   const normalizedCorrected = corrected?.contour.points.map(toNormalized) ?? [];
+  let courseColors: CourseColors | null = null,
+    courseColorError = '';
+  try {
+    const personColors = usePhoto
+      ? colorExtraction
+      : !error && points.length
+        ? sampleColors(mask, points)
+        : null;
+    if (personColors && corrected)
+      courseColors = mapCourseColors(
+        personColors.colorSamples,
+        corrected.contour.points,
+        // Original outline in the same meters as the corrected course.
+        points.map((p) => ({
+          x: p.x * width * resampling.metersPerPixel,
+          y: p.y * height * resampling.metersPerPixel,
+        })),
+      );
+  } catch (cause) {
+    courseColorError =
+      cause instanceof Error
+        ? cause.message
+        : 'コースに色を割り当てられません。';
+  }
   return (
     <details className="card contour-inspection">
       <summary>輪郭の検証・平滑化の調整</summary>
@@ -381,6 +468,44 @@ export function ContourInspection({
           {corrected.warning && <p role="alert">{corrected.warning}</p>}
         </>
       )}
+      {courseColorError && <p role="alert">{courseColorError}</p>}
+      {courseColors ? (
+        <>
+          <p role="status">
+            補正後コースの{courseColors.points.length}
+            点に人物の色を割り当てました。区間の境界だけ、区間の長さの
+            {Math.round(courseColors.blendRatio * 100)}
+            %の幅でグラデーションにしています。
+            {courseColors.reversed && '向きを元の輪郭に合わせて反転しました。'}
+            {courseColors.rotated > 0 &&
+              `始点を元の輪郭に合わせて${courseColors.rotated}点ずらしました。`}
+          </p>
+          <div
+            className="course-color-bar"
+            role="img"
+            aria-label="STARTから一周の壁の色"
+            style={{
+              background: `linear-gradient(to right, ${courseColors.wallColorStops
+                .map((s) => `${s.color} ${(s.progress * 100).toFixed(2)}%`)
+                .join(', ')}, ${courseColors.wallColorStops[0].color} 100%)`,
+            }}
+          />
+          <p className="course-color-scale">
+            <span>START</span>
+            <span>
+              一周（壁の色・{courseColors.wallColorStops.length}色の切り替え点）
+            </span>
+            <span>START</span>
+          </p>
+        </>
+      ) : (
+        usePhoto &&
+        !colorExtraction && (
+          <p>
+            コースの色は「人物の色を取り出す」で色を取得すると表示されます。
+          </p>
+        )
+      )}
       <div className="contour-grid">
         {(
           [
@@ -391,6 +516,7 @@ export function ContourInspection({
             'resampled',
             'curvesBefore',
             'curvesAfter',
+            'courseColors',
           ] as const
         ).map((mode) => (
           <figure key={mode}>
@@ -407,7 +533,9 @@ export function ContourInspection({
                         ? '急カーブ補正前（赤：急カーブ）'
                         : mode === 'curvesAfter'
                           ? '急カーブ補正後（赤：残った急カーブ）'
-                          : '平滑化後'}
+                          : mode === 'courseColors'
+                            ? 'コースの色（赤い丸：START）'
+                            : '平滑化後'}
             </figcaption>
             <InspectionCanvas
               mask={mask}
@@ -416,9 +544,11 @@ export function ContourInspection({
                   ? normalizedSamples
                   : mode === 'curvesAfter'
                     ? normalizedCorrected
-                    : mode === 'original' || mode === 'mask'
-                      ? points
-                      : (smoothed?.points ?? [])
+                    : mode === 'courseColors'
+                      ? (courseColors?.points.map(toNormalized) ?? [])
+                      : mode === 'original' || mode === 'mask'
+                        ? points
+                        : (smoothed?.points ?? [])
               }
               blob={usePhoto ? photo.blob : undefined}
               mode={mode}
@@ -428,6 +558,11 @@ export function ContourInspection({
                   : mode === 'curvesAfter'
                     ? corrected?.after.sharp
                     : undefined
+              }
+              colors={
+                mode === 'courseColors'
+                  ? courseColors?.points.map((p) => p.color)
+                  : undefined
               }
             />
           </figure>

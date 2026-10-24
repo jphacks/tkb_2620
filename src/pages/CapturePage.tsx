@@ -6,6 +6,7 @@ import {
 } from '../image-processing/resampleContour';
 import type { ResamplingOptions } from '../image-processing/resampleContour';
 import { correctSharpCurves } from '../image-processing/correctCurves';
+import { mapCourseColors } from '../image-processing/mapCourseColors';
 import {
   smoothClosedContour,
   DEFAULT_SMOOTHING,
@@ -76,6 +77,23 @@ export default function CapturePage({ captured, onConfirm }: Props) {
       return null;
     }
   }, [resampled]);
+  const photoColors =
+    photo && colorResult?.blob === photo.blob ? colorResult.result : null;
+  const courseColors = useMemo(() => {
+    if (!photo?.outline || !photoColors || !curveCorrection) return null;
+    try {
+      return mapCourseColors(
+        photoColors.colorSamples,
+        curveCorrection.contour.points,
+        photo.outline.points.map((p) => ({
+          x: p.x * photo.width * resampling.metersPerPixel,
+          y: p.y * photo.height * resampling.metersPerPixel,
+        })),
+      );
+    } catch {
+      return null;
+    }
+  }, [photo, photoColors, curveCorrection, resampling]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const generation = useRef(0);
@@ -274,6 +292,7 @@ export default function CapturePage({ captured, onConfirm }: Props) {
                   smoothingOptions: { ...smoothing },
                   resampledContour: resampled.result ?? undefined,
                   curveCorrection: curveCorrection ?? undefined,
+                  courseColors: courseColors ?? undefined,
                   resamplingOptions: { ...resampling },
                 })
               }
@@ -297,6 +316,7 @@ export default function CapturePage({ captured, onConfirm }: Props) {
       />
       <ContourInspection
         photo={photo}
+        colorExtraction={photoColors}
         smoothing={smoothing}
         resampling={resampling}
         onResamplingChange={(options) => {
