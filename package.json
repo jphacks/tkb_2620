@@ -17,7 +17,8 @@
     "test:capture": "node --test tests/capture.test.ts",
     "test:curves": "node --test tests/curves.test.ts",
     "test:colors": "node --test tests/course-colors.test.ts",
-    "test:course": "node --test tests/generate-course.test.ts"
+    "test:course": "node --test tests/generate-course.test.ts",
+    "test:controls": "node --test tests/controls.test.ts"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.1",

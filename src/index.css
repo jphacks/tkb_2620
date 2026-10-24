@@ -681,3 +681,250 @@ button:disabled {
   border-radius: 12px;
   padding: 8px 12px;
 }
+
+/* スマホの操作画面（#14）。画面いっぱいに表示し、ボタン類は☰のサイドバーへ */
+.controller-screen {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  overflow: hidden;
+  background: #f8f6ef;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.controller-label {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  margin: 0;
+  display: grid;
+  font-weight: 700;
+}
+.controller-label small {
+  font-weight: 400;
+  font-size: 11px;
+  opacity: 0.75;
+}
+.controller-menu-toggle {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 20px;
+}
+.controller-note {
+  position: absolute;
+  bottom: 36px;
+  left: 16px;
+  right: 16px;
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  color: #765123;
+}
+.controller-menu {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(260px, 80%);
+  padding: 64px 14px 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: white;
+  box-shadow: -4px 0 16px #0002;
+  transform: translateX(105%);
+  transition: transform 160ms ease;
+}
+.controller-menu.open {
+  transform: none;
+}
+.hold-row {
+  display: flex;
+  gap: 10px;
+}
+.hold-button {
+  flex: 1;
+  padding: 16px 8px;
+  font-size: 17px;
+  font-weight: 700;
+  touch-action: none;
+}
+.hold-button:active {
+  background: #294b37;
+  color: white;
+}
+.hold-button.accel:active {
+  background: #2e7d4f;
+}
+.hold-button.brake:active {
+  background: #c8443b;
+}
+.start-chip {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #294b37;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* ハンドル：縦ロックのまま横に持つので、画面全体を90°回して横長に使う */
+.controller-screen.controller-steering {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: 100vh;
+  height: 100vw;
+  width: 100dvh;
+  height: 100dvw;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+.controller-screen.controller-steering.flipped {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+.controller-steering .controller-menu {
+  width: min(260px, 45%);
+}
+/* 絵はスマホに対して回さない。切れ具合は下のメーターで見せる */
+.wheel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  --size: min(72dvw, 46dvh);
+  width: var(--size);
+  height: var(--size);
+  margin: calc(var(--size) / -2) 0 0 calc(var(--size) / -2);
+  padding: 0;
+  border-radius: 50%;
+  border: 16px solid #294b37;
+  background: transparent;
+}
+.wheel::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 14px;
+  margin-top: -7px;
+  background: #294b37;
+}
+.wheel:disabled,
+.pedals:disabled {
+  opacity: 0.6;
+}
+.steer-meter {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  width: min(60dvh, 360px);
+  height: 8px;
+  margin-left: calc(min(60dvh, 360px) / -2);
+  border-radius: 4px;
+  background: #e6e2d6;
+}
+.steer-meter::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: #27382f;
+}
+.steer-meter span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 4px;
+  background: #efa747;
+}
+.wheel-mark {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  width: 10px;
+  height: 30px;
+  margin-left: -5px;
+  border-radius: 5px;
+  background: #efa747;
+}
+
+/* ペダル：縦持ち。左が幅広のブレーキ、右が縦長のアクセル */
+.pedals {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: flex-end;
+  gap: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.pedal {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+.pedal small {
+  font-weight: 700;
+}
+.pedal-plate {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background:
+    repeating-linear-gradient(0deg, #ffffff22 0 6px, transparent 6px 14px),
+    #3a4a42;
+  box-shadow: 0 6px 0 #1e2a24;
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+.pedal-brake .pedal-plate {
+  width: min(34vw, 150px);
+  height: min(24vh, 150px);
+}
+.pedal-accel .pedal-plate {
+  width: min(22vw, 92px);
+  height: min(40vh, 260px);
+}
+.pedal-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.85;
+}
+.pedal-brake .pedal-fill {
+  background: #c8443b;
+}
+.pedal-accel .pedal-fill {
+  background: #2e7d4f;
+}
+.pedal-hint {
+  position: absolute;
+  bottom: 72px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.7;
+}

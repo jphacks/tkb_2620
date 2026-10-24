@@ -1,13 +1,16 @@
 import type { ReactNode } from 'react';
 import type { CourseData } from '../../shared/course';
+import type { DriveInput } from '../game/updateGame';
 import { GameCanvas } from '../game/GameCanvas';
 import { sampleCourse } from '../fixtures/sampleCourse';
 export default function GamePage({
   roomSlot,
+  getRemoteInput,
   course,
   courseName,
 }: {
   roomSlot?: ReactNode;
+  getRemoteInput?: () => DriveInput | null;
   /** The course made from the photo (Issue #10); the sample course until then. */
   course?: CourseData;
   courseName?: string;
@@ -28,6 +31,7 @@ export default function GamePage({
             {roomSlot}
           </>
         }
+        getRemoteInput={getRemoteInput}
       />
     </section>
   );

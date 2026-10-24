@@ -4,6 +4,7 @@ import { Button } from './components/Button';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { RoomPanel } from './components/RoomPanel';
 import { useRoom } from './socket/useRoom';
+import { useRemoteInput } from './socket/useRemoteInput';
 import type { ControllerRole } from '../shared/socket';
 import type { CourseData } from '../shared/course';
 import CourseReadyPage from './pages/CourseReadyPage';
@@ -47,6 +48,7 @@ export default function App() {
     name: string;
   } | null>(null);
   const { connected, room, role, error, createRoom, joinRoom } = useRoom();
+  const getRemoteInput = useRemoteInput(room);
   const [join] = useState(readJoinParams);
   const roomRequested = useRef(false);
 
@@ -77,18 +79,19 @@ export default function App() {
 
   if (join) {
     const Controller = join.role === 'steering' ? SteeringPage : PedalPage;
+    const statusText = error
+      ? error
+      : role && room
+        ? `ROOM ${room.roomId} に「${roleLabels[role]}」担当で参加中`
+        : `ROOM ${join.roomId} に参加しています...`;
     return (
       <div className="app">
         {header}
         <main>
           <p className="controller-room" role="status">
-            {error
-              ? error
-              : role && room
-                ? `ROOM ${room.roomId} に「${roleLabels[role]}」担当で参加中`
-                : `ROOM ${join.roomId} に参加しています...`}
+            {statusText}
           </p>
-          <Controller />
+          <Controller joined={Boolean(role && room)} statusText={statusText} />
         </main>
       </div>
     );
@@ -115,6 +118,7 @@ export default function App() {
             course={course?.data}
             courseName={course?.name}
             roomSlot={<RoomPanel connected={connected} room={room} />}
+            getRemoteInput={getRemoteInput}
           />
         ) : View ? (
           <View />

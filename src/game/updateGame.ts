@@ -1,11 +1,14 @@
 import type { CourseData, CoursePoint } from '../../shared/course';
 import { VEHICLE, FIXED_STEP } from './constants';
 export type WallSegment = { a: CoursePoint; b: CoursePoint };
+/** throttle・brake は 0〜1（キーボードは 0 か 1）、steering は -1（右）〜1（左）。 */
 export type DriveInput = {
-  throttle: boolean;
-  brake: boolean;
+  throttle: number;
+  brake: number;
   steering: number;
 };
+const unit = (value: number) =>
+  Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
 export type TruckState = {
   x: number;
   z: number;
@@ -80,15 +83,25 @@ export function updateGame(
     );
     next.steering +=
       (target - next.steering) * (1 - Math.exp(-VEHICLE.steeringResponse * dt));
-    const accel = input.brake
-      ? -VEHICLE.brakeDeceleration
-      : input.throttle
-        ? VEHICLE.acceleration
-        : -VEHICLE.rollingDeceleration;
-    const speed = Math.max(
-      0,
-      Math.min(VEHICLE.maxSpeed, next.speed + accel * dt),
-    );
+    const throttle = unit(input.throttle),
+      brake = unit(input.brake);
+    // ブレーキ優先。踏み込みが浅いほど、自然な減速との差し引きで加速が弱くなる
+    const accel =
+      brake > 0
+        ? -VEHICLE.brakeDeceleration * brake -
+          VEHICLE.rollingDeceleration * (1 - brake)
+        : throttle > 0
+          ? VEHICLE.acceleration * throttle -
+            VEHICLE.rollingDeceleration * (1 - throttle)
+          : -VEHICLE.rollingDeceleration;
+    let speed = next.speed + accel * dt;
+    // クリープ現象：ブレーキを踏んでいなければ、AT車のようにゆっくり前へ進む
+    if (brake === 0 && speed < VEHICLE.creepSpeed)
+      speed = Math.min(
+        VEHICLE.creepSpeed,
+        Math.max(speed, next.speed + VEHICLE.creepAcceleration * dt),
+      );
+    speed = Math.max(0, Math.min(VEHICLE.maxSpeed, speed));
     const yaw =
       next.yaw + ((next.steering * speed) / VEHICLE.minTurnRadius) * dt;
     const candidate = {
