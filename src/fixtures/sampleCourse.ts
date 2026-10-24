@@ -1,17 +1,18 @@
 import type { CourseData } from '../../shared/course';
-/** Synthetic shape for integration checks only; not a person contour or final scale.
- * For this fixture only: image top maps to negative z; points run clockwise in image space.
+/** Ellipse fixture only. Top is negative z, counterclockwise viewed from above.
+ * Dimensions are sample values. Counterclockwise direction is the shared rule.
  */
 export const sampleCourse: CourseData = {
-  points: [
-    { x: 10, z: -10 },
-    { x: 10, z: 10 },
-    { x: -10, z: 10 },
-    { x: -10, z: -10 },
-  ],
+  points: Array.from({ length: 160 }, (_, index) => {
+    const angle = (index / 160) * Math.PI * 2;
+    return { x: -24 * Math.sin(angle), z: -16 * Math.cos(angle) };
+  }),
   wallColorStops: [
     { progress: 0, color: '#272321' },
-    { progress: 0.5, color: '#C9947D' },
+    { progress: 0.2, color: '#D7A58C' },
+    { progress: 0.4, color: '#E6DFD3' },
+    { progress: 0.6, color: '#334B6A' },
+    { progress: 0.8, color: '#C9947D' },
   ],
   themeColor: '#F2A65A',
   roadWidth: 3,
