@@ -4,8 +4,11 @@ import type { createScene, DrivingStatus } from './createScene';
 import type { DriveInput } from './updateGame';
 import { createLapTrack, formatTime } from './lap';
 import type { DeliveryResult } from './score';
+import type { CapturedPerson } from '../capture/capture';
+import { CourseMinimap } from '../components/CourseMinimap';
 export function GameCanvas({
   course,
+  minimapPhoto,
   toolbarExtra,
   getRemoteInput,
   courseName = 'コース',
@@ -15,6 +18,7 @@ export function GameCanvas({
   onLobby,
 }: {
   course: CourseData;
+  minimapPhoto?: CapturedPerson | null;
   toolbarExtra?: ReactNode;
   /** スマホからの入力（#14） */
   getRemoteInput?: () => DriveInput | null;
@@ -28,6 +32,9 @@ export function GameCanvas({
   /** ホーム（ロビー）へ戻る */
   onLobby?: () => void;
 }) {
+  const [dismissedPhoto, setDismissedPhoto] = useState<CapturedPerson | null>(
+    null,
+  );
   // 3D画面を作り直さずに最新の関数を使う
   const remoteInput = useRef(getRemoteInput);
   useEffect(() => {
@@ -42,6 +49,8 @@ export function GameCanvas({
   const [error, setError] = useState(''),
     [following, setFollowing] = useState(true);
   const [status, setStatus] = useState<DrivingStatus>({
+    position: course.points[0],
+    droppedCargo: [],
     speed: 0,
     distance: 0,
     collided: false,
@@ -51,6 +60,11 @@ export function GameCanvas({
     cargoRemaining: 0,
     cargoTotal: 0,
   });
+  const [mapPosition, setMapPosition] = useState<{
+    course: CourseData;
+    point: { x: number; z: number };
+    droppedCargo: DrivingStatus['droppedCargo'];
+  } | null>(null);
   const courseLength = useMemo(
     () => createLapTrack(course.points, course.roadWidth).length,
     [course],
@@ -99,7 +113,14 @@ export function GameCanvas({
         scene.current = createScene(
           element,
           course,
-          (next) => handleStatus.current(next),
+          (next) => {
+            handleStatus.current(next);
+            setMapPosition({
+              course,
+              point: next.position,
+              droppedCargo: next.droppedCargo,
+            });
+          },
           () => remoteInput.current?.() ?? null,
           () => paused.current,
         );
@@ -121,7 +142,12 @@ export function GameCanvas({
     };
   }, [course]);
   return (
-    <div className="course-preview">
+    <div
+      className="course-preview"
+      onKeyDownCapture={(event) => {
+        if (event.code === 'KeyR') setDismissedPhoto(minimapPhoto ?? null);
+      }}
+    >
       <div className="course-toolbar">
         <div className="toolbar-info">
           <span>↑ / W 加速 / ↓ / S / Space ブレーキ / ← → / A D ハンドル</span>
@@ -161,6 +187,7 @@ export function GameCanvas({
           </button>
           <button
             onClick={() => {
+              setDismissedPhoto(minimapPhoto ?? null);
               scene.current?.resetTruck();
               container.current?.focus();
             }}
@@ -179,6 +206,7 @@ export function GameCanvas({
             )}
             <button
               onClick={() => {
+                setDismissedPhoto(minimapPhoto ?? null);
                 scene.current?.resetTruck();
                 container.current?.focus();
               }}
@@ -211,7 +239,12 @@ export function GameCanvas({
                 キーボードで続ける
               </button>
             )}
-            <button onClick={() => scene.current?.resetTruck()}>
+            <button
+              onClick={() => {
+                setDismissedPhoto(minimapPhoto ?? null);
+                scene.current?.resetTruck();
+              }}
+            >
               STARTに戻す
             </button>
             {onLobby && <button onClick={onLobby}>ホームへ戻る</button>}
@@ -227,8 +260,19 @@ export function GameCanvas({
         aria-label="キーボードでトラックを操作"
         onPointerDown={() => container.current?.focus()}
       />
+      <CourseMinimap
+        photo={minimapPhoto !== dismissedPhoto ? minimapPhoto : null}
+        droppedCargo={
+          mapPosition?.course === course ? mapPosition.droppedCargo : []
+        }
+        wallColorStops={course.wallColorStops}
+        points={course.points}
+        position={
+          mapPosition?.course === course ? mapPosition.point : course.points[0]
+        }
+      />
       <p className="course-caption">
-        反時計回りのコースです。Rでリセット。画面からフォーカスが外れると一時停止します。スマホ操作・荷物・ゴール判定は今後追加します。
+        反時計回りのコースです。Rでリセット。右下のミニマップで現在位置を確認できます。
       </p>
     </div>
   );

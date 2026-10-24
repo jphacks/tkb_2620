@@ -104,6 +104,7 @@ footer {
 }
 
 .course-preview {
+  position: relative;
   overflow: hidden;
   background: white;
   border: 1px solid #d7dccf;
@@ -1072,4 +1073,65 @@ button:disabled {
 }
 .pause-overlay button {
   white-space: nowrap;
+}
+
+.course-minimap {
+  position: absolute;
+  z-index: 2;
+  bottom: 60px;
+  right: 16px;
+  width: clamp(180px, 22vw, 280px);
+  border: 1px solid #d7dccfaa;
+  border-radius: 14px;
+  background: #e8eee6;
+  box-shadow: 0 3px 12px #182c2720;
+  pointer-events: none;
+}
+.course-minimap svg {
+  display: block;
+  width: 100%;
+}
+.course-minimap p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0 0 9px;
+  font-size: 10px;
+  color: #182c27;
+}
+.minimap-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff2d2d;
+  border: 1px solid white;
+}
+.minimap-start {
+  width: 6px;
+  height: 6px;
+  background: white;
+  border: 1px solid #182c27;
+  margin-left: 5px;
+}
+
+.minimap-legend {
+  flex-wrap: wrap;
+  padding: 0 5px;
+}
+.minimap-legend > span {
+  white-space: nowrap;
+}
+.minimap-drop-key {
+  color: #ffdf32;
+  -webkit-text-stroke: 0.5px #40380b;
+  font-size: 15px;
+  line-height: 10px;
+}
+
+@media (max-width: 650px) {
+  .course-minimap {
+    width: clamp(140px, 28vw, 180px);
+    right: 8px;
+  }
 }

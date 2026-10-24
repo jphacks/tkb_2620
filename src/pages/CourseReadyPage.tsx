@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CourseData } from '../../shared/course';
 import type { CapturedPerson } from '../capture/capture';
+import { useMapPhoto } from '../capture/useMapPhoto';
+import type { MapPhoto } from '../capture/useMapPhoto';
 import { buildCourse } from '../image-processing/generateCourse';
 
 /** Shown at least this long so the generating animation reads as a step, not a flicker. */
@@ -22,6 +24,7 @@ export default function CourseReadyPage({
   onRetake,
   onFailed,
 }: Props) {
+  const mapPhoto = useMapPhoto(captured);
   const [course, setCourse] = useState<CourseData | null>(null);
   const [warning, setWarning] = useState('');
   const [error, setError] = useState('');
@@ -116,7 +119,10 @@ export default function CourseReadyPage({
       <p>
         赤い丸がSTARTです。ここから反時計回りに一周します。壁の色は写真の人物の色です。
       </p>
-      <CourseMap course={course} />
+      <CourseMap course={course} photo={mapPhoto} />
+      <p className="course-note">
+        人物写真は今回の初回プレイだけ表示します。写真は保存・送信しません。
+      </p>
       <p className="course-facts">
         一周 {courseLength(course).toFixed(0)}m ・ 道幅{' '}
         {course.roadWidth.toFixed(1)}m ・{' '}
@@ -168,7 +174,13 @@ function courseLength({ points }: CourseData) {
 }
 
 /** Top view of the whole course: colored walls, gray road, red START. */
-export function CourseMap({ course }: { course: CourseData }) {
+export function CourseMap({
+  course,
+  photo,
+}: {
+  course: CourseData;
+  photo?: MapPhoto | null;
+}) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const element = canvas.current;
@@ -187,50 +199,75 @@ export function CourseMap({ course }: { course: CourseData }) {
     element.height = Math.round((maxZ - minZ) * scale);
     const at = (p: { x: number; z: number }) =>
       [(p.x - minX) * scale, (p.z - minZ) * scale] as const;
-    context.fillStyle = '#e8eee6';
-    context.fillRect(0, 0, element.width, element.height);
-    context.lineCap = 'round';
-    context.lineJoin = 'round';
-    // Total length for wall color lookup by progress.
-    const cumulative = [0];
-    points.forEach((p, i) => {
-      const q = points[(i + 1) % points.length];
-      cumulative.push(cumulative[i] + Math.hypot(q.x - p.x, q.z - p.z));
-    });
-    const total = cumulative[points.length];
-    const wallAt = (progress: number) => {
-      let color = wallColorStops[0].color;
-      for (const stop of wallColorStops)
-        if (stop.progress <= progress) color = stop.color;
-      return color;
+    let cancelled = false;
+    function draw(image?: HTMLImageElement) {
+      if (cancelled) return;
+      context!.fillStyle = '#e8eee6';
+      context!.fillRect(0, 0, element!.width, element!.height);
+      if (image && photo) {
+        const [x, y] = at(photo.from),
+          [right, bottom] = at(photo.to);
+        context!.drawImage(image, x, y, right - x, bottom - y);
+      }
+      context!.lineCap = 'round';
+      context!.lineJoin = 'round';
+      // Total length for wall color lookup by progress.
+      const cumulative = [0];
+      points.forEach((p, i) => {
+        const q = points[(i + 1) % points.length];
+        cumulative.push(cumulative[i] + Math.hypot(q.x - p.x, q.z - p.z));
+      });
+      const total = cumulative[points.length];
+      const wallAt = (progress: number) => {
+        let color = wallColorStops[0].color;
+        for (const stop of wallColorStops)
+          if (stop.progress <= progress) color = stop.color;
+        return color;
+      };
+      // Walls: wide colored strokes, then the road on top leaves colored rims.
+      context!.lineWidth = roadWidth * scale * 1.35;
+      points.forEach((p, i) => {
+        const q = points[(i + 1) % points.length];
+        context!.strokeStyle = wallAt(cumulative[i] / total);
+        context!.beginPath();
+        context!.moveTo(...at(p));
+        context!.lineTo(...at(q));
+        context!.stroke();
+      });
+      context!.strokeStyle = '#4a4f4a';
+      context!.lineWidth = roadWidth * scale;
+      context!.beginPath();
+      points.forEach((p, i) =>
+        i ? context!.lineTo(...at(p)) : context!.moveTo(...at(p)),
+      );
+      context!.closePath();
+      context!.stroke();
+      const [sx, sy] = at(points[0]);
+      context!.fillStyle = '#ff2d2d';
+      context!.strokeStyle = '#ffffff';
+      context!.lineWidth = Math.max(2, scale * roadWidth * 0.12);
+      context!.beginPath();
+      context!.arc(
+        sx,
+        sy,
+        Math.max(6, roadWidth * scale * 0.45),
+        0,
+        Math.PI * 2,
+      );
+      context!.fill();
+      context!.stroke();
+    }
+    draw();
+    const image = photo ? new Image() : null;
+    if (image && photo) {
+      image.onload = () => draw(image);
+      image.src = photo.url;
+    }
+    return () => {
+      cancelled = true;
+      if (image) image.onload = null;
     };
-    // Walls: wide colored strokes, then the road on top leaves colored rims.
-    context.lineWidth = roadWidth * scale * 1.35;
-    points.forEach((p, i) => {
-      const q = points[(i + 1) % points.length];
-      context.strokeStyle = wallAt(cumulative[i] / total);
-      context.beginPath();
-      context.moveTo(...at(p));
-      context.lineTo(...at(q));
-      context.stroke();
-    });
-    context.strokeStyle = '#4a4f4a';
-    context.lineWidth = roadWidth * scale;
-    context.beginPath();
-    points.forEach((p, i) =>
-      i ? context.lineTo(...at(p)) : context.moveTo(...at(p)),
-    );
-    context.closePath();
-    context.stroke();
-    const [sx, sy] = at(points[0]);
-    context.fillStyle = '#ff2d2d';
-    context.strokeStyle = '#ffffff';
-    context.lineWidth = Math.max(2, scale * roadWidth * 0.12);
-    context.beginPath();
-    context.arc(sx, sy, Math.max(6, roadWidth * scale * 0.45), 0, Math.PI * 2);
-    context.fill();
-    context.stroke();
-  }, [course]);
+  }, [course, photo]);
   return (
     <canvas
       ref={canvas}
