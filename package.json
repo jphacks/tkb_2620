@@ -23,7 +23,8 @@
     "test:lap": "node --test tests/lap.test.ts",
     "test:score": "node --test tests/score.test.ts",
     "test:safety": "node --test tests/safety.test.ts",
-    "test:cargo": "node --test tests/cargo.test.ts tests/cargo-sliding.test.ts tests/cargo-falling.test.ts tests/cargo-rails.test.ts tests/cargo-launch.test.ts"
+    "test:cargo": "node --test tests/cargo.test.ts tests/cargo-sliding.test.ts tests/cargo-falling.test.ts tests/cargo-rails.test.ts tests/cargo-launch.test.ts",
+    "test:db": "node --test tests/course-row.test.ts"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.1",

@@ -11,6 +11,7 @@ import { useRemoteInput } from './socket/useRemoteInput';
 import type { ControllerRole } from '../shared/socket';
 import type { CourseData } from '../shared/course';
 import CourseReadyPage from './pages/CourseReadyPage';
+import { isDatabaseConfigured, recordPlay, saveCourse } from './db/supabase';
 import HomePage from './pages/HomePage';
 import CapturePage from './pages/CapturePage';
 import GamePage from './pages/GamePage';
@@ -54,7 +55,11 @@ export default function App() {
   const [course, setCourse] = useState<{
     data: CourseData;
     name: string;
+    /** DB に保存されていれば、その id（#25） */
+    id?: string;
   } | null>(null);
+  // コースの保存がうまくいかなかったときの案内（ゲームはそのまま遊べる）
+  const [saveNotice, setSaveNotice] = useState('');
   // 直近の配送結果（#21）。ゴールすると結果画面へ移る
   const [result, setResult] = useState<DeliveryResult | null>(null);
   const { connected, room, role, error, createRoom, joinRoom } = useRoom();
@@ -196,6 +201,16 @@ export default function App() {
             />
           ) : active === RESULT_PAGE ? (
             <ResultPage result={result} onRetry={() => goTo(GAME_PAGE)} />
+          ) : active === 0 ? (
+            <HomePage
+              onPlaySaved={(saved) => {
+                // 保存したコースで遊ぶ（#25）
+                setCourse({ data: saved.data, name: saved.name, id: saved.id });
+                setSaveNotice('');
+                goTo(GAME_PAGE);
+                recordPlay(saved.id).catch(() => {});
+              }}
+            />
           ) : View ? (
             <View />
           ) : photoStep === 'course' && captured ? (
@@ -212,7 +227,24 @@ export default function App() {
                 }
                 setFirstPlayPhoto(captured);
                 setCourse({ data, name });
+                setSaveNotice('');
                 goTo(GAME_PAGE);
+                // 遊び始めると同時に裏で保存する（#25）。失敗してもゲームは続ける
+                if (isDatabaseConfigured)
+                  saveCourse(data, name)
+                    .then((saved) => {
+                      setCourse((current) =>
+                        current?.data === data
+                          ? { ...current, id: saved.id }
+                          : current,
+                      );
+                      return recordPlay(saved.id);
+                    })
+                    .catch((cause: unknown) =>
+                      setSaveNotice(
+                        `コースを保存できませんでした。遊ぶことはできます。${cause instanceof Error ? `（${cause.message}）` : ''}`,
+                      ),
+                    );
               }}
               onRetake={() => {
                 setCaptured(null);
@@ -241,6 +273,7 @@ export default function App() {
           )}
         </ErrorBoundary>
         {error && <p className="error-text">{error}</p>}
+        {saveNotice && <p className="error-text">{saveNotice}</p>}
       </main>
       <footer>開発用のひな形です。ゲーム機能はこれから実装します。</footer>
     </div>
