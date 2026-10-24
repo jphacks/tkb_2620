@@ -413,7 +413,13 @@ button:disabled {
   pointer-events: none;
   align-items: flex-start;
 }
-.app-game .course-toolbar > span {
+.app-game .toolbar-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.app-game .toolbar-info > span {
   background: #ffffffeb;
   border-radius: 10px;
   padding: 9px 12px;
@@ -429,10 +435,6 @@ button:disabled {
   background: #fffffff2;
 }
 .app-game .drive-status {
-  position: absolute;
-  z-index: 2;
-  top: 64px;
-  left: 16px;
   padding: 9px 12px;
   border-radius: 10px;
   background: #294b37eb;
@@ -467,14 +469,11 @@ button:disabled {
     inset: 8px 8px auto;
     gap: 6px;
   }
-  .app-game .course-toolbar > span {
+  .app-game .toolbar-info > span {
     font-size: 10px;
     padding: 6px 8px;
   }
   .app-game .drive-status {
-    top: 96px;
-    left: 8px;
-    right: 8px;
     gap: 6px;
     font-size: 11px;
   }
@@ -485,5 +484,80 @@ button:disabled {
   }
   .app-game header {
     padding: 6px 10px;
+  }
+}
+
+.error-text {
+  color: #b3261e;
+  text-align: center;
+}
+
+/* 運転画面の上段: ROOM CODE とスマホ用QR（#13） */
+.room-panel {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin-left: auto;
+  pointer-events: auto;
+}
+.room-panel-waiting,
+.room-code,
+.room-qr {
+  background: #fffffff2;
+  border-radius: 10px;
+  padding: 6px 8px;
+}
+.room-panel-waiting {
+  margin: 0;
+  font-size: 12px;
+}
+.room-code {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+.room-code strong {
+  font-size: 18px;
+  letter-spacing: 0.12em;
+}
+.room-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: inherit;
+  text-decoration: none;
+}
+.room-qr svg {
+  display: block;
+}
+.room-qr-label {
+  font-size: 11px;
+  font-weight: 700;
+}
+.room-qr-state {
+  font-size: 10px;
+  color: #765123;
+}
+.room-qr-state.joined {
+  color: #2e7d4f;
+  font-weight: 700;
+}
+.controller-room {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: white;
+  font-size: 14px;
+}
+@media (max-width: 650px) {
+  .room-panel {
+    margin-left: 0;
+  }
+  .room-qr svg {
+    width: 52px;
+    height: 52px;
   }
 }

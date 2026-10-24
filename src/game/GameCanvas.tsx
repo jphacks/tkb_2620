@@ -1,7 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { CourseData } from '../../shared/course';
 import type { createScene, DrivingStatus } from './createScene';
-export function GameCanvas({ course }: { course: CourseData }) {
+export function GameCanvas({
+  course,
+  toolbarExtra,
+}: {
+  course: CourseData;
+  toolbarExtra?: ReactNode;
+}) {
   const container = useRef<HTMLDivElement>(null),
     scene = useRef<ReturnType<typeof createScene> | null>(null);
   const [error, setError] = useState(''),
@@ -40,7 +46,25 @@ export function GameCanvas({ course }: { course: CourseData }) {
   return (
     <div className="course-preview">
       <div className="course-toolbar">
-        <span>↑ / W 加速 / ↓ / S / Space ブレーキ / ← → / A D ハンドル</span>
+        <div className="toolbar-info">
+          <span>↑ / W 加速 / ↓ / S / Space ブレーキ / ← → / A D ハンドル</span>
+          <div className="drive-status">
+            <span>
+              速度 {status.speed.toFixed(1)} <small>unit/s</small>
+            </span>
+            <span>
+              走行距離 {status.distance.toFixed(1)} <small>unit</small>
+            </span>
+            <span>
+              {status.collided
+                ? '壁に接触 — RでSTARTへ'
+                : status.active
+                  ? '走行中'
+                  : '画面をクリックして操作'}
+            </span>
+          </div>
+        </div>
+        {toolbarExtra}
         <div className="drive-actions">
           <button
             onClick={() => {
@@ -59,21 +83,6 @@ export function GameCanvas({ course }: { course: CourseData }) {
             STARTに戻す
           </button>
         </div>
-      </div>
-      <div className="drive-status">
-        <span>
-          速度 {status.speed.toFixed(1)} <small>unit/s</small>
-        </span>
-        <span>
-          走行距離 {status.distance.toFixed(1)} <small>unit</small>
-        </span>
-        <span>
-          {status.collided
-            ? '壁に接触 — RでSTARTへ'
-            : status.active
-              ? '走行中'
-              : '画面をクリックして操作'}
-        </span>
       </div>
       {error && <p role="alert">{error}</p>}
       <div
