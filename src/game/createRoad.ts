@@ -76,7 +76,7 @@ export function createRoad(course: CourseData) {
   });
   const group = new THREE.Group();
   group.name = 'course';
-  const wallHeight = roadWidth * 0.3;
+  const wallHeight = roadWidth * 0.15;
   function ribbon(name: string, wallSide?: number) {
     const positions: number[] = [],
       colors: number[] = [],
@@ -112,8 +112,82 @@ export function createRoad(course: CourseData) {
     group.add(mesh);
   }
   ribbon('road');
-  ribbon('left-wall', 0);
-  ribbon('right-wall', 1);
+  // Extend outward so the drivable width and inner collision boundary stay unchanged.
+  const wallThickness = roadWidth * 0.12;
+  function solidWall(name: string, side: number) {
+    const positions: number[] = [],
+      colors: number[] = [],
+      indices: number[] = [];
+    function section(i: number) {
+      const edge = edges[i % count][side];
+      const point = points[i % count];
+      const outward = new THREE.Vector3(
+        edge.x - point.x,
+        0,
+        edge.z - point.z,
+      ).multiplyScalar(wallThickness / (roadWidth / 2));
+      return [
+        edge.clone(),
+        edge.clone().setY(wallHeight),
+        edge.clone().add(outward).setY(wallHeight),
+        edge.clone().add(outward),
+      ];
+    }
+    for (let i = 0; i < count; i++) {
+      const a = section(i),
+        b = section(i + 1);
+      for (let face = 0; face < 4; face++) {
+        const next = (face + 1) % 4,
+          offset = positions.length / 3;
+        const c1 = colorAt(distances[i] / length),
+          c2 = colorAt(distances[i + 1] / length);
+        if (face === 1) {
+          c1.lerp(new THREE.Color('#ffffff'), 0.28);
+          c2.lerp(new THREE.Color('#ffffff'), 0.28);
+        } else if (face === 2) {
+          c1.multiplyScalar(0.8);
+          c2.multiplyScalar(0.8);
+        }
+        for (const [point, color] of [
+          [a[face], c1],
+          [a[next], c1],
+          [b[face], c2],
+          [b[next], c2],
+        ] as const) {
+          positions.push(point.x, point.y, point.z);
+          colors.push(color.r, color.g, color.b);
+        }
+        indices.push(
+          offset,
+          offset + 2,
+          offset + 1,
+          offset + 1,
+          offset + 2,
+          offset + 3,
+        );
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(positions, 3),
+    );
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    const mesh = new THREE.Mesh(
+      geometry,
+      new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        side: THREE.DoubleSide,
+        roughness: 0.9,
+      }),
+    );
+    mesh.name = name;
+    group.add(mesh);
+  }
+  solidWall('left-wall', 0);
+  solidWall('right-wall', 1);
   const first = points[0],
     direction = directions[0];
   const start = new THREE.Group();
@@ -148,5 +222,5 @@ export function createRoad(course: CourseData) {
   );
   arrow.name = 'start-direction';
   group.add(arrow);
-  return { group, length, wallHeight };
+  return { group, length, wallHeight, edges };
 }
