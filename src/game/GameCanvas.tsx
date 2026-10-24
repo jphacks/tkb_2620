@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { socket } from '../socket/client';
 import type { CourseData } from '../../shared/course';
 import type { createScene, DrivingStatus } from './createScene';
 import type { DriveInput } from './updateGame';
 import { createLapTrack, formatTime } from './lap';
 import type { DeliveryResult } from './score';
 import type { CapturedPerson } from '../capture/capture';
+import { createGameAudio, feedbackEvents, soundSettings } from './feedback';
 import { GameHud } from '../components/GameHud';
 import { CourseMinimap } from '../components/CourseMinimap';
 export function GameCanvas({
@@ -33,6 +35,31 @@ export function GameCanvas({
   /** ホーム（ロビー）へ戻る */
   onLobby?: () => void;
 }) {
+  const audio = useRef<ReturnType<typeof createGameAudio> | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(soundSettings.enabled);
+  const soundPreference = useRef(soundSettings.enabled);
+  const previousFeedback = useRef<DrivingStatus | null>(null);
+  const accelerationFeedback = useRef({ time: 0, speed: 0, harsh: false });
+  function unlockAudio() {
+    if (!soundPreference.current) return;
+    try {
+      audio.current ??= createGameAudio();
+      void audio.current.unlock();
+    } catch {
+      // Unsupported audio must never prevent playing the game.
+    }
+  }
+  useEffect(() => {
+    const silence = () => audio.current?.update(0, false);
+    window.addEventListener('blur', silence);
+    document.addEventListener('visibilitychange', silence);
+    return () => {
+      window.removeEventListener('blur', silence);
+      document.removeEventListener('visibilitychange', silence);
+      audio.current?.dispose();
+      audio.current = null;
+    };
+  }, []);
   const [dismissedPhoto, setDismissedPhoto] = useState<CapturedPerson | null>(
     null,
   );
@@ -50,6 +77,7 @@ export function GameCanvas({
   const [error, setError] = useState(''),
     [following, setFollowing] = useState(true);
   const [status, setStatus] = useState<DrivingStatus>({
+    introducing: false,
     position: course.points[0],
     droppedCargo: [],
     wrongWay: false,
@@ -80,6 +108,53 @@ export function GameCanvas({
   const resultRef = useRef<DeliveryResult | null>(null);
   const handleStatus = useRef((next: DrivingStatus) => {
     setStatus(next);
+    const events = feedbackEvents(previousFeedback.current, next);
+    const audible = !document.hidden && document.hasFocus() && !paused.current;
+    audio.current?.update(
+      next.speed,
+      audible &&
+        next.active &&
+        !next.finished &&
+        (next.countdown == null || next.countdown === 0),
+    );
+    if (
+      audible &&
+      next.countdown != null &&
+      next.countdown !== previousFeedback.current?.countdown
+    )
+      audio.current?.countdown(next.countdown === 0);
+    if (audible && events.dropped) audio.current?.drop();
+    if (audible && events.delivered) audio.current?.finish();
+    const hit = next.collided && !previousFeedback.current?.collided;
+    const previousMotion = accelerationFeedback.current;
+    const dt = next.time - previousMotion.time;
+    const acceleration =
+      dt > 0 && dt <= 0.5
+        ? Math.abs(next.speed - previousMotion.speed) / dt
+        : 0;
+    // Hysteresis avoids repeatedly warning around the threshold (game metres / s²).
+    const harsh = acceleration > (previousMotion.harsh ? 5 : 7);
+    const becameHarsh = harsh && !previousMotion.harsh;
+    accelerationFeedback.current = {
+      time: next.time,
+      speed: next.speed,
+      harsh,
+    };
+    if (
+      !next.finished &&
+      (events.dropped || hit || becameHarsh) &&
+      socket.connected
+    ) {
+      socket.volatile.emit(
+        'game:feedback',
+        events.dropped
+          ? 'cargo-drop'
+          : hit
+            ? 'collision'
+            : 'harsh-acceleration',
+      );
+    }
+    previousFeedback.current = next;
     if (next.finished && !resultRef.current) {
       resultRef.current = {
         courseName: info.current.courseName,
@@ -108,6 +183,8 @@ export function GameCanvas({
   useEffect(() => {
     const element = container.current;
     if (!element) return;
+    previousFeedback.current = null;
+    audio.current?.update(0, false);
     let cancelled = false;
     import('./createScene')
       .then(({ createScene }) => {
@@ -146,7 +223,9 @@ export function GameCanvas({
   return (
     <div
       className="course-preview"
+      onPointerDownCapture={unlockAudio}
       onKeyDownCapture={(event) => {
+        unlockAudio();
         if (event.code === 'KeyR') setDismissedPhoto(minimapPhoto ?? null);
       }}
     >
@@ -158,15 +237,17 @@ export function GameCanvas({
             cargoTotal={status.cargoTotal}
             speed={status.speed}
             message={
-              status.finished
-                ? '配送完了！'
-                : status.wrongWay
-                  ? '逆走防止中 — ハンドル＋アクセルで向きを戻してください'
-                  : status.collided
-                    ? '壁に接触 — ハンドルを切ってアクセルで復帰'
-                    : status.active
-                      ? '走行中'
-                      : '画面をクリックして操作'
+              status.introducing
+                ? 'コースを見渡しています…'
+                : status.finished
+                  ? '配送完了！'
+                  : status.wrongWay
+                    ? '逆走防止中 — ハンドル＋アクセルで向きを戻してください'
+                    : status.collided
+                      ? '壁に接触 — ハンドルを切ってアクセルで復帰'
+                      : status.active
+                        ? '走行中'
+                        : '画面をクリックして操作'
             }
           />
           <details className="drive-help">
@@ -179,6 +260,19 @@ export function GameCanvas({
         </div>
         <div className="hud-extras">{toolbarExtra}</div>
         <div className="drive-actions">
+          <button
+            aria-pressed={soundEnabled}
+            onClick={() => {
+              const enabled = !soundPreference.current;
+              soundPreference.current = enabled;
+              setSoundEnabled(enabled);
+              soundSettings.enabled = enabled;
+              audio.current?.setEnabled(enabled);
+              if (enabled) unlockAudio();
+            }}
+          >
+            {soundEnabled ? 'サウンド：ON' : 'サウンド：OFF'}
+          </button>
           <button
             onClick={() => {
               scene.current?.setFollowing(!following);
@@ -198,9 +292,25 @@ export function GameCanvas({
           </button>
         </div>
       </div>
+      {status.introducing && (
+        <div className="intro-camera-notice">
+          <p>この道を、ふたりで走ろう。</p>
+        </div>
+      )}
+      {status.countdown != null && (
+        <div className="start-countdown" role="status" aria-live="polite">
+          <span key={status.countdown}>
+            {status.countdown === 0 ? 'Go!' : status.countdown}
+          </span>
+        </div>
+      )}
       {status.finished && (
         <div className="goal-overlay" role="status">
+          <div className="delivery-celebration" aria-hidden="true">
+            📦 ✓
+          </div>
           <p className="goal-title">配送完了！</p>
+          <p>お届け先まで、ふたりで運びきりました！</p>
           <p className="goal-time">{formatTime(status.time)}</p>
           <div className="goal-actions">
             {onFinish && result && (

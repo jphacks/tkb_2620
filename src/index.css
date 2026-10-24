@@ -625,8 +625,8 @@ button:disabled {
   stroke: #294b37;
   stroke-width: 2;
   transform-origin: 100px 100px;
-  /* Counterclockwise, like the course. */
-  animation: generating-drive 1.4s linear infinite reverse;
+  /* Clockwise, matching the truck illustration facing right at the top. */
+  animation: generating-drive 1.4s linear infinite;
 }
 @keyframes generating-drive {
   to {
@@ -1438,4 +1438,143 @@ button:disabled {
   display: grid;
   gap: 4px;
   font-size: 13px;
+}
+
+.delivery-celebration {
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  color: #e8bd39;
+  animation: delivery-arrival 650ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes delivery-arrival {
+  from {
+    opacity: 0;
+    transform: translateY(-35px) rotate(-12deg) scale(0.7);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(4px) rotate(3deg) scale(1.06);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .delivery-celebration {
+    animation: none;
+  }
+}
+
+.start-countdown {
+  position: absolute;
+  inset: 30% 0 auto;
+  z-index: 5;
+  text-align: center;
+  pointer-events: none;
+  font-size: clamp(4rem, 12vw, 9rem);
+  font-weight: 900;
+  color: #ffd541;
+  text-shadow:
+    0 4px 0 #26382c,
+    0 0 24px #26382c;
+}
+.start-countdown span {
+  display: inline-block;
+  animation: countdown-pop 250ms ease-out;
+}
+.slip-date-stamp {
+  animation: stamp-impression 420ms 0ms both;
+}
+@keyframes countdown-pop {
+  from {
+    transform: scale(1.25);
+    opacity: 0.3;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes stamp-impression {
+  0%,
+  30% {
+    opacity: 0;
+    transform: rotate(-16deg) scale(1.8) translateY(-18px);
+  }
+  62% {
+    opacity: 0.9;
+    transform: rotate(-8deg) scale(0.94);
+  }
+  80% {
+    transform: rotate(-8deg) scale(1.03);
+  }
+  100% {
+    opacity: 0.9;
+    transform: rotate(-8deg) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slip-date-stamp,
+  .start-countdown span {
+    animation: none;
+  }
+}
+
+.intro-camera-notice {
+  position: absolute;
+  inset: auto 0 18%;
+  z-index: 5;
+  text-align: center;
+  color: white;
+  text-shadow: 0 2px 8px #15261b;
+}
+.intro-camera-notice p {
+  font-size: clamp(1.2rem, 3vw, 2rem);
+  font-weight: 800;
+}
+
+/* Portal keeps the warning aligned with the device, including rotated steering UI. */
+.controller-impact {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 7px #e34242,
+    inset 0 0 45px 15px #e3424270;
+  animation: controller-impact 850ms ease-out both;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: max(22px, env(safe-area-inset-bottom)) 15px;
+}
+@keyframes controller-impact {
+  0%,
+  40%,
+  75% {
+    opacity: 1;
+  }
+  25%,
+  60%,
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .controller-impact {
+    animation: none;
+  }
+}
+
+.impact-danger {
+  --impact-color: #e34242;
+  --impact-glow: #e3424270;
+  --impact-label: #9b2020;
+}
+.impact-caution {
+  --impact-color: #ffd541;
+  --impact-glow: #ffd54170;
+  --impact-label: #725000;
 }

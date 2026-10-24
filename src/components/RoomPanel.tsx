@@ -31,10 +31,6 @@ export function RoomPanel({ connected, room }: Props) {
 
   return (
     <div className="room-panel" aria-label="スマホ接続">
-      <div className="room-code">
-        <span>ROOM CODE</span>
-        <strong>{room.roomId}</strong>
-      </div>
       {controllers.map(({ role, label }) => {
         const joined = room[role] !== null;
         const url = getJoinUrl(room.roomId, role);

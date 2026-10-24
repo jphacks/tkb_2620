@@ -146,8 +146,8 @@ export default function App() {
     const statusText = error
       ? error
       : role && room
-        ? `ROOM ${room.roomId} に「${roleLabels[role]}」担当で参加中`
-        : `ROOM ${join.roomId} に参加しています...`;
+        ? `「${roleLabels[role]}」担当で接続済み`
+        : 'ゲームに接続しています...';
     return (
       <div className="app">
         {header}

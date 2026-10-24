@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { playStampSound } from '../game/feedback';
 import { Button } from '../components/Button';
 import { RankingEntryForm } from '../components/RankingEntryForm';
 import { formatTime } from '../game/lap';
@@ -17,6 +19,11 @@ export default function ResultPage({
   result?: DeliveryResult | null;
   onRetry?: () => void;
 }) {
+  useEffect(() => {
+    if (!result) return;
+    const timer = window.setTimeout(playStampSound, 260);
+    return () => window.clearTimeout(timer);
+  }, [result]);
   if (!result)
     return (
       <section>
@@ -51,13 +58,14 @@ export default function ResultPage({
             <dt>お届け日</dt>
             <dd>
               <time
+                key={result.finishedAt}
                 className="slip-date-stamp"
                 dateTime={deliveryDate.replaceAll('.', '-')}
                 aria-label={`配達完了日 ${deliveryDate}`}
               >
                 <span className="slip-date-stamp-heading">配達完了</span>
                 <strong>{deliveryDate}</strong>
-                <span className="slip-date-stamp-office">BODY ROAD</span>
+                <span className="slip-date-stamp-office">Bodrive</span>
               </time>
             </dd>
           </div>
