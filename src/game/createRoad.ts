@@ -212,15 +212,5 @@ export function createRoad(course: CourseData) {
   start.rotation.y = Math.atan2(direction.x, direction.y);
   start.position.set(first.x, 0, first.z);
   group.add(start);
-  const arrow = new THREE.ArrowHelper(
-    new THREE.Vector3(direction.x, 0, direction.y),
-    new THREE.Vector3(first.x, wallHeight + 0.2, first.z),
-    roadWidth,
-    0xffb34f,
-    roadWidth * 0.3,
-    roadWidth * 0.2,
-  );
-  arrow.name = 'start-direction';
-  group.add(arrow);
   return { group, length, wallHeight, edges };
 }
