@@ -15,6 +15,6 @@ export const sampleCourse: CourseData = {
     { progress: 0.8, color: '#C9947D' },
   ],
   themeColor: '#F2A65A',
-  roadWidth: 3,
+  roadWidth: 6.0,
   captureMode: 'full_body',
 };
