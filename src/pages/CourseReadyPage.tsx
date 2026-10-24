@@ -1,57 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CourseData } from '../../shared/course';
 import type { CapturedPerson } from '../capture/capture';
-import {
-  buildCourse,
-  DEFAULT_COURSE_SIZE,
-} from '../image-processing/generateCourse';
-import { DEFAULT_ROAD_FIT } from '../image-processing/fitRoad';
+import { buildCourse } from '../image-processing/generateCourse';
 
 /** Shown at least this long so the generating animation reads as a step, not a flicker. */
 const MIN_GENERATING_MS = 1600;
 export const DEFAULT_COURSE_NAME = 'なまえのないコース';
 export const MAX_COURSE_NAME_LENGTH = 20;
-
-/** Provisional tuning sliders: how coarsely the photo becomes a road. */
-type Coarseness = { grow: number; concaveRadius: number; courseSize: number };
-const DEFAULT_COARSENESS: Coarseness = {
-  grow: DEFAULT_ROAD_FIT.grow,
-  concaveRadius: DEFAULT_ROAD_FIT.concaveRadius,
-  courseSize: DEFAULT_COURSE_SIZE,
-};
-const COARSENESS_SLIDERS: {
-  key: keyof Coarseness;
-  label: string;
-  hint: string;
-  min: number;
-  max: number;
-  step: number;
-}[] = [
-  {
-    key: 'grow',
-    label: '細かい形を埋める量',
-    hint: '大きいほど指やすき間が埋まり、腕や脚が太くなる',
-    min: 0,
-    max: 16,
-    step: 1,
-  },
-  {
-    key: 'concaveRadius',
-    label: 'へこみの丸め',
-    hint: '大きいほど脇・股などのへこみがゆるやかになる',
-    min: 0,
-    max: 30,
-    step: 1,
-  },
-  {
-    key: 'courseSize',
-    label: 'コースの大きさ',
-    hint: '大きいほど道幅に対して人型が大きく、細かい形が残る',
-    min: 80,
-    max: 300,
-    step: 10,
-  },
-];
 
 type Props = {
   captured: CapturedPerson;
@@ -64,59 +19,41 @@ export default function CourseReadyPage({ captured, onPlay, onRetake }: Props) {
   const [warning, setWarning] = useState('');
   const [error, setError] = useState('');
   const [name, setName] = useState('');
-  const [coarseness, setCoarseness] = useState(DEFAULT_COARSENESS);
-  const [rebuilding, setRebuilding] = useState(false);
-  const shown = useRef(false);
   useEffect(() => {
     // The parent remounts this page per photo, so state starts empty each time.
     let cancelled = false;
     const started = performance.now();
-    // First build: let the generating screen paint. Slider changes: wait for the drag to settle.
-    const first = !shown.current;
-    if (!first) setRebuilding(true);
-    const timer = window.setTimeout(
-      () => {
-        let result: CourseData | null = null,
-          message = '',
-          note = '';
-        try {
-          const built = buildCourse(captured, {
-            courseSize: coarseness.courseSize,
-            fit: {
-              grow: coarseness.grow,
-              concaveRadius: coarseness.concaveRadius,
-            },
-          });
-          result = built.course;
-          note = built.warning ?? '';
-        } catch (cause) {
-          message =
-            cause instanceof Error
-              ? cause.message
-              : 'コースを作れませんでした。';
-        }
-        const wait = first
-          ? Math.max(0, MIN_GENERATING_MS - (performance.now() - started))
-          : 0;
-        window.setTimeout(() => {
-          if (cancelled) return;
-          // Keep showing the last good course when a slider value fails.
-          if (result || !shown.current) setCourse(result);
-          shown.current = shown.current || !!result;
-          setError(message);
-          setWarning(note);
-          setRebuilding(false);
-        }, wait);
-      },
-      first ? 50 : 200,
-    );
+    // Let the generating screen paint before the work starts.
+    const timer = window.setTimeout(() => {
+      let result: CourseData | null = null,
+        message = '',
+        note = '';
+      try {
+        const built = buildCourse(captured);
+        result = built.course;
+        note = built.warning ?? '';
+      } catch (cause) {
+        message =
+          cause instanceof Error ? cause.message : 'コースを作れませんでした。';
+      }
+      const wait = Math.max(
+        0,
+        MIN_GENERATING_MS - (performance.now() - started),
+      );
+      window.setTimeout(() => {
+        if (cancelled) return;
+        setCourse(result);
+        setError(message);
+        setWarning(note);
+      }, wait);
+    }, 50);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [captured, coarseness]);
+  }, [captured]);
 
-  if (error && !course)
+  if (error)
     return (
       <section className="course-ready">
         <p className="eyebrow">STEP 02 · COURSE</p>
@@ -164,44 +101,6 @@ export default function CourseReadyPage({ captured, onPlay, onRetake }: Props) {
         赤い丸がSTARTです。ここから反時計回りに一周します。壁の色は写真の人物の色です。
       </p>
       <CourseMap course={course} />
-      <fieldset className="course-tuning" aria-busy={rebuilding}>
-        <legend>粒度の調整（仮）</legend>
-        {COARSENESS_SLIDERS.map((slider) => (
-          <label key={slider.key}>
-            <span>
-              {slider.label}：<strong>{coarseness[slider.key]}</strong>
-            </span>
-            <input
-              type="range"
-              id={`coarseness-${slider.key}`}
-              min={slider.min}
-              max={slider.max}
-              step={slider.step}
-              value={coarseness[slider.key]}
-              onChange={(event) =>
-                setCoarseness({
-                  ...coarseness,
-                  [slider.key]: Number(event.target.value),
-                })
-              }
-            />
-            <small>{slider.hint}</small>
-          </label>
-        ))}
-        <p className="course-tuning-values" role="status">
-          {rebuilding
-            ? 'コースを作り直しています…'
-            : `いまの値：埋める量 ${coarseness.grow} ／ へこみの丸め ${coarseness.concaveRadius} ／ 大きさ ${coarseness.courseSize}`}
-        </p>
-        {error && (
-          <p className="capture-error" role="alert">
-            この値ではコースを作れません：{error}
-          </p>
-        )}
-        <button type="button" onClick={() => setCoarseness(DEFAULT_COARSENESS)}>
-          初期値に戻す
-        </button>
-      </fieldset>
       <p className="course-facts">
         一周 {courseLength(course).toFixed(0)}m ・ 道幅{' '}
         {course.roadWidth.toFixed(1)}m ・{' '}

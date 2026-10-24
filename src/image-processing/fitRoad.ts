@@ -30,9 +30,9 @@ export type RoadFitOptions = {
   maxDisplacement: number;
 };
 export const DEFAULT_ROAD_FIT = {
-  // Chosen by trying the sliders on the course screen (with courseSize 300).
-  grow: 3,
-  concaveRadius: 2,
+  // With courseSize 110: the person stays recognizable and no turn is tighter than about 8.
+  grow: 8,
+  concaveRadius: 14,
   // The truck's turning radius; the shaping above already keeps most turns wider.
   minTurnRadius: 6,
   maxDisplacement: 2,
