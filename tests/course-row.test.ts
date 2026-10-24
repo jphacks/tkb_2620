@@ -122,8 +122,8 @@ test('rankings are grouped per course, best score then fastest, top 3 only (#29)
   assert.equal(top.get('c'), undefined);
 });
 
-test('ranking names are trimmed and cut to 12 characters; blank is rejected (#29)', () => {
+test('team names are trimmed and cut to 16 characters; blank is rejected (#29)', () => {
   assert.equal(normalizeDisplayName('  あやか '), 'あやか');
-  assert.equal(normalizeDisplayName('あ'.repeat(15)), 'あ'.repeat(12));
+  assert.equal(normalizeDisplayName('あ'.repeat(20)), 'あ'.repeat(16));
   assert.equal(normalizeDisplayName('   '), '');
 });

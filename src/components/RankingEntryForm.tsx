@@ -29,7 +29,7 @@ type State =
   | { kind: 'error'; message: string }
   | { kind: 'done'; rank: number | null; top: RankingEntry[] };
 
-/** 結果画面：名前を入れてコース別ランキングに登録し、順位とTOP3を見せる（#29） */
+/** 結果画面：2人のチーム名を入れてコース別ランキングに登録し、順位とTOP3を見せる（#29） */
 export function RankingEntryForm({ result }: { result: DeliveryResult }) {
   const [name, setName] = useState(rememberedName);
   const [state, setState] = useState<State>({ kind: 'idle' });
@@ -90,11 +90,11 @@ export function RankingEntryForm({ result }: { result: DeliveryResult }) {
     >
       <h2>ランキングに登録</h2>
       <label>
-        なまえ
+        チーム名
         <input
           value={name}
           maxLength={DISPLAY_NAME_MAX}
-          placeholder={`${DISPLAY_NAME_MAX}文字まで`}
+          placeholder={`例：あやか＆ゆりえ（${DISPLAY_NAME_MAX}文字まで）`}
           onChange={(event) => setName(event.target.value)}
           disabled={state.kind === 'sending'}
         />

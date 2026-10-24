@@ -36,7 +36,7 @@
 
 - `courses`：上の列に加え `id`・`name`（20文字まで）・`status`（`active`/`archived`）・`play_count`・`created_at`・`last_played_at`。Memory Score（#30）は `last_played_at` から必要なときに計算し、保存しない。
 - 保存するコースの中身は、ゲーム側の検査（`src/game/safety.ts` の `validateCourseData`、#22）と同じ基準でDBも検査する：点は `{x: 数, z: 数}` が3〜5000個、壁の色は1つ以上で `{progress: 0〜1, color: '#RRGGBB'}`、テーマ色は `#RRGGBB`、道幅は0より大きい。
-- `rankings`：`course_id`・`display_name`（12文字まで）・`score`（0〜100）・`clear_time_ms`・`remaining_cargo`・`cargo_total`（積んだ数。残り ≤ 積んだ数）・`created_at`。コースごとにTOP3だけ残す。分けない（2人・3人で同じランキング）。
+- `rankings`：`course_id`・`display_name`（2人で1つのチーム名、16文字まで。`20261025000000_team_name.sql`）・`score`（0〜100）・`clear_time_ms`・`remaining_cargo`・`cargo_total`（積んだ数。残り ≤ 積んだ数）・`created_at`。コースごとにTOP3だけ残す。分けない（2人・3人で同じランキング）。
 - サンプルの楕円コースは、ID `00000000-0000-4000-8000-000000000001`・名前「サンプルコース（楕円）」で常に入れておく（`sampleCourse.ts` と同じ形）。写真なしで遊んだときもこのIDでランキングを付ける。古くなっても `archived` にしない。
 - ブラウザ（anonキー）からできるのは、公開中のコースとランキングを読む・コースを保存する・`record_play(course_id)`（遊び始め）・`submit_ranking(course_id, display_name, score, clear_time_ms, remaining_cargo, cargo_total)`（ゴール。TOP3なら順位、圏外ならnull）だけ。書き換え・削除・ランキングの直接登録はRLSと権限で拒否する。
 - `archive_stale_courses(days)`（#32）は管理者（service_role）専用。最後に遊ばれてから指定日数たった公開中のコース（サンプルを除く）を `archived` にし、一覧・ランキングから外す（データは消さない）。アプリでは31日（エビングハウスの忘却曲線の最後の測定点、思い出度 約21）で、pg_cron が毎日実行する（`20261024020000_schedule_archive.sql`）。
