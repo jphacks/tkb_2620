@@ -1,4 +1,9 @@
 import {
+  DEFAULT_RESAMPLING,
+  resamplePhotoContour,
+} from '../image-processing/resampleContour';
+import type { ResamplingOptions } from '../image-processing/resampleContour';
+import {
   smoothClosedContour,
   DEFAULT_SMOOTHING,
   previewContourPath,
@@ -32,6 +37,29 @@ export default function CapturePage({ captured, onConfirm }: Props) {
     [photo, smoothing],
   );
   const displayOutline = smoothed?.points ?? [];
+  const [resampling, setResampling] = useState<ResamplingOptions>(
+    captured?.resamplingOptions ?? DEFAULT_RESAMPLING,
+  );
+  const resampled = useMemo(() => {
+    if (!photo || !smoothed) return { result: null, error: '' };
+    try {
+      return {
+        result: resamplePhotoContour(
+          smoothed.points,
+          photo.width,
+          photo.height,
+          resampling,
+        ),
+        error: '',
+      };
+    } catch (cause) {
+      return {
+        result: null,
+        error:
+          cause instanceof Error ? cause.message : '等間隔化に失敗しました。',
+      };
+    }
+  }, [photo, smoothed, resampling]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const generation = useRef(0);
@@ -198,7 +226,7 @@ export default function CapturePage({ captured, onConfirm }: Props) {
             </button>
             <button
               className="capture-primary"
-              disabled={!photo.outline}
+              disabled={!photo.outline || !resampled.result}
               onClick={() =>
                 onConfirm({
                   ...photo,
@@ -207,6 +235,8 @@ export default function CapturePage({ captured, onConfirm }: Props) {
                       ? { ...photo.outline, points: smoothed.points }
                       : undefined,
                   smoothingOptions: { ...smoothing },
+                  resampledContour: resampled.result ?? undefined,
+                  resamplingOptions: { ...resampling },
                 })
               }
             >
@@ -221,9 +251,15 @@ export default function CapturePage({ captured, onConfirm }: Props) {
         </p>
       )}
       {smoothed?.warning && <p role="status">{smoothed.warning}</p>}
+      {resampled.error && <p role="alert">{resampled.error}</p>}
       <ContourInspection
         photo={photo}
         smoothing={smoothing}
+        resampling={resampling}
+        onResamplingChange={(options) => {
+          setResampling(options);
+          onConfirm(null);
+        }}
         onSmoothingChange={(options) => {
           setSmoothing(options);
           onConfirm(null);

@@ -1,3 +1,8 @@
+import { resamplePhotoContour } from '../image-processing/resampleContour';
+import type {
+  ResamplingOptions,
+  ResampledContour,
+} from '../image-processing/resampleContour';
 import type { SmoothingOptions } from '../image-processing/previewContour';
 import {
   smoothClosedContour,
@@ -39,7 +44,7 @@ function InspectionCanvas({
   mask: BinaryPersonMask;
   points: OutlinePoint[];
   blob?: Blob;
-  mode: 'photo' | 'mask' | 'outline' | 'original';
+  mode: 'photo' | 'mask' | 'outline' | 'original' | 'resampled';
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -79,7 +84,7 @@ function InspectionCanvas({
       }
       if (mode !== 'mask' && points.length) {
         const path = new Path2D(
-          mode === 'original'
+          mode === 'original' || mode === 'resampled'
             ? points
                 .map(
                   (p, i) =>
@@ -93,6 +98,20 @@ function InspectionCanvas({
         context.lineJoin = 'round';
         context.lineCap = 'round';
         context.stroke(path);
+        if (mode === 'resampled') {
+          context.fillStyle = '#ff735e';
+          for (const p of points) {
+            context.beginPath();
+            context.arc(
+              p.x * mask.width,
+              p.y * mask.height,
+              Math.max(0.55, mask.width / 230),
+              0,
+              Math.PI * 2,
+            );
+            context.fill();
+          }
+        }
       }
     }
     void draw();
@@ -107,11 +126,13 @@ function InspectionCanvas({
       aria-label={
         mode === 'mask'
           ? '人物二値マスク。白が人物、黒が背景'
-          : mode === 'original'
-            ? '平滑化前の輪郭'
-            : mode === 'outline'
-              ? '平滑化後の輪郭'
-              : '写真と抽出輪郭の重ね合わせ'
+          : mode === 'resampled'
+            ? '等間隔に配置した輪郭点'
+            : mode === 'original'
+              ? '平滑化前の輪郭'
+              : mode === 'outline'
+                ? '平滑化後の輪郭'
+                : '写真と抽出輪郭の重ね合わせ'
       }
     />
   );
@@ -120,9 +141,13 @@ export function ContourInspection({
   photo,
   smoothing,
   onSmoothingChange,
+  resampling,
+  onResamplingChange,
 }: {
   photo: CapturedPerson | null;
   smoothing: SmoothingOptions;
+  resampling: ResamplingOptions;
+  onResamplingChange: (options: ResamplingOptions) => void;
   onSmoothingChange: (options: SmoothingOptions) => void;
 }) {
   const [sample, setSample] = useState(false);
@@ -146,6 +171,27 @@ export function ContourInspection({
     !error && points.length
       ? smoothClosedContour(points, mask.width, mask.height, smoothing)
       : null;
+  const width = usePhoto ? photo.width : mask.width,
+    height = usePhoto ? photo.height : mask.height;
+  let sampled: ResampledContour | null = null,
+    sampleError = '';
+  if (smoothed)
+    try {
+      sampled = resamplePhotoContour(
+        smoothed.points,
+        width,
+        height,
+        resampling,
+      );
+    } catch (cause) {
+      sampleError =
+        cause instanceof Error ? cause.message : '等間隔化に失敗しました。';
+    }
+  const normalizedSamples =
+    sampled?.points.map((p) => ({
+      x: p.x / (width * resampling.metersPerPixel),
+      y: p.y / (height * resampling.metersPerPixel),
+    })) ?? [];
   return (
     <details className="card contour-inspection">
       <summary>輪郭の検証・平滑化の調整</summary>
@@ -224,30 +270,82 @@ export function ContourInspection({
         回。設定を変えたら「この写真を使う」で確定してください。
       </p>
       {smoothed?.warning && <p role="status">{smoothed.warning}</p>}
+      <div className="smoothing-controls">
+        <label>
+          点間隔：{resampling.spacing.toFixed(1)}m
+          <input
+            type="range"
+            min="0.1"
+            max="2"
+            step="0.1"
+            value={resampling.spacing}
+            onChange={(e) =>
+              onResamplingChange({
+                ...resampling,
+                spacing: Number(e.target.value),
+              })
+            }
+          />
+        </label>
+        <label>
+          変換倍率：1px = {resampling.metersPerPixel.toFixed(3)}m
+          <input
+            type="range"
+            min="0.005"
+            max="0.2"
+            step="0.005"
+            value={resampling.metersPerPixel}
+            onChange={(e) =>
+              onResamplingChange({
+                ...resampling,
+                metersPerPixel: Number(e.target.value),
+              })
+            }
+          />
+        </label>
+      </div>
+      <p>
+        倍率は読み込み後の写真（{width}×{height}
+        px）に対する仮の設定です。実際の身体の寸法を推定するものではありません。
+      </p>
+      {sampleError && <p role="alert">{sampleError}</p>}
+      {sampled && (
+        <p role="status">
+          一周 {sampled.totalLength.toFixed(2)}m・{sampled.points.length}
+          点・実際の弧長間隔 {sampled.actualSpacing.toFixed(3)}
+          m。赤い点が等間隔の位置です。最後から最初まで同じ間隔でつながります。
+        </p>
+      )}
       <div className="contour-grid">
-        {(['photo', 'mask', 'original', 'outline'] as const).map((mode) => (
-          <figure key={mode}>
-            <figcaption>
-              {mode === 'photo'
-                ? '写真＋外周'
-                : mode === 'mask'
-                  ? '人物二値マスク'
-                  : mode === 'original'
-                    ? '平滑化前（元の輪郭）'
-                    : '平滑化後'}
-            </figcaption>
-            <InspectionCanvas
-              mask={mask}
-              points={
-                mode === 'original' || mode === 'mask'
-                  ? points
-                  : (smoothed?.points ?? [])
-              }
-              blob={usePhoto ? photo.blob : undefined}
-              mode={mode}
-            />
-          </figure>
-        ))}
+        {(['photo', 'mask', 'original', 'outline', 'resampled'] as const).map(
+          (mode) => (
+            <figure key={mode}>
+              <figcaption>
+                {mode === 'photo'
+                  ? '写真＋外周'
+                  : mode === 'mask'
+                    ? '人物二値マスク'
+                    : mode === 'original'
+                      ? '平滑化前（元の輪郭）'
+                      : mode === 'resampled'
+                        ? '等間隔に配置した点'
+                        : '平滑化後'}
+              </figcaption>
+              <InspectionCanvas
+                mask={mask}
+                points={
+                  mode === 'resampled'
+                    ? normalizedSamples
+                    : mode === 'original' || mode === 'mask'
+                      ? points
+                      : (smoothed?.points ?? [])
+                }
+                blob={usePhoto ? photo.blob : undefined}
+                mode={mode}
+              />
+            </figure>
+          ),
+        )}
       </div>
       <p>
         元の輪郭と平滑化後の点列を両方保持します。道路への変換・カーブ半径の保証は次の処理で行います。確認用の輪郭は画像の左上が原点で、右が+x、下が+yです。

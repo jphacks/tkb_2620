@@ -1,3 +1,7 @@
+import type {
+  ResampledContour,
+  ResamplingOptions,
+} from '../image-processing/resampleContour';
 import type { SmoothingOptions } from '../image-processing/previewContour';
 import type {
   BinaryPersonMask,
@@ -17,6 +21,8 @@ export type CapturedPerson = {
   binaryMask?: BinaryPersonMask;
   smoothedOutline?: PersonOutline;
   smoothingOptions?: SmoothingOptions;
+  resampledContour?: ResampledContour;
+  resamplingOptions?: ResamplingOptions;
 };
 
 export type PosePoint = { x: number; y: number; visibility?: number };
