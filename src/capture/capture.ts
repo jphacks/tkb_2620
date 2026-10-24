@@ -1,3 +1,4 @@
+import type { SmoothingOptions } from '../image-processing/previewContour';
 import type {
   BinaryPersonMask,
   PersonOutline,
@@ -14,6 +15,8 @@ export type CapturedPerson = {
   recognitionMessage?: string;
   outline?: PersonOutline;
   binaryMask?: BinaryPersonMask;
+  smoothedOutline?: PersonOutline;
+  smoothingOptions?: SmoothingOptions;
 };
 
 export type PosePoint = { x: number; y: number; visibility?: number };

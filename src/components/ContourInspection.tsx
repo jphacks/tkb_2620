@@ -1,5 +1,6 @@
+import type { SmoothingOptions } from '../image-processing/previewContour';
 import {
-  smoothPreviewContour,
+  smoothClosedContour,
   previewContourPath,
 } from '../image-processing/previewContour';
 import { useEffect, useRef, useState } from 'react';
@@ -38,7 +39,7 @@ function InspectionCanvas({
   mask: BinaryPersonMask;
   points: OutlinePoint[];
   blob?: Blob;
-  mode: 'photo' | 'mask' | 'outline';
+  mode: 'photo' | 'mask' | 'outline' | 'original';
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -77,9 +78,15 @@ function InspectionCanvas({
         context.putImageData(pixels, 0, 0);
       }
       if (mode !== 'mask' && points.length) {
-        const smooth = smoothPreviewContour(points, mask.width, mask.height);
         const path = new Path2D(
-          previewContourPath(smooth, mask.width, mask.height),
+          mode === 'original'
+            ? points
+                .map(
+                  (p, i) =>
+                    `${i ? 'L' : 'M'} ${p.x * mask.width} ${p.y * mask.height}`,
+                )
+                .join(' ') + ' Z'
+            : previewContourPath(points, mask.width, mask.height),
         );
         context.strokeStyle = '#ffe229';
         context.lineWidth = Math.max(1, mask.width / 100);
@@ -100,14 +107,24 @@ function InspectionCanvas({
       aria-label={
         mode === 'mask'
           ? '人物二値マスク。白が人物、黒が背景'
-          : mode === 'outline'
-            ? '抽出した閉じた外周輪郭'
-            : '写真と抽出輪郭の重ね合わせ'
+          : mode === 'original'
+            ? '平滑化前の輪郭'
+            : mode === 'outline'
+              ? '平滑化後の輪郭'
+              : '写真と抽出輪郭の重ね合わせ'
       }
     />
   );
 }
-export function ContourInspection({ photo }: { photo: CapturedPerson | null }) {
+export function ContourInspection({
+  photo,
+  smoothing,
+  onSmoothingChange,
+}: {
+  photo: CapturedPerson | null;
+  smoothing: SmoothingOptions;
+  onSmoothingChange: (options: SmoothingOptions) => void;
+}) {
   const [sample, setSample] = useState(false);
   const [clipped, setClipped] = useState(true);
   const usePhoto = photo?.binaryMask && !sample;
@@ -125,9 +142,13 @@ export function ContourInspection({ photo }: { photo: CapturedPerson | null }) {
   } catch (cause) {
     error = cause instanceof Error ? cause.message : '輪郭を抽出できません';
   }
+  const smoothed =
+    !error && points.length
+      ? smoothClosedContour(points, mask.width, mask.height, smoothing)
+      : null;
   return (
     <details className="card contour-inspection">
-      <summary>輪郭の検証（マスク・外周・サンプル）</summary>
+      <summary>輪郭の検証・平滑化の調整</summary>
       <p>
         白い領域から最大のつながった領域だけを選び、外周を閉じた点列として取り出します。内部の穴と孤立したノイズは輪郭に含めません。
       </p>
@@ -158,19 +179,70 @@ export function ContourInspection({ photo }: { photo: CapturedPerson | null }) {
           。黄色い線は表示用に丸めた外周です。抽出した元の点列は保持しています。
         </p>
       )}
+      <div className="smoothing-controls">
+        <label>
+          平滑化の強さ：{smoothing.strength.toFixed(2)}
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={smoothing.strength}
+            onChange={(e) =>
+              onSmoothingChange({
+                ...smoothing,
+                strength: Number(e.target.value),
+              })
+            }
+          />
+        </label>
+        <label>
+          繰り返し回数：{smoothing.iterations}
+          <input
+            type="range"
+            min="0"
+            max="15"
+            step="1"
+            value={smoothing.iterations}
+            onChange={(e) =>
+              onSmoothingChange({
+                ...smoothing,
+                iterations: Number(e.target.value),
+              })
+            }
+          />
+        </label>
+        <button
+          onClick={() => onSmoothingChange({ iterations: 3, strength: 0.4 })}
+        >
+          初期値に戻す
+        </button>
+      </div>
+      <p>
+        元の輪郭 {points.length}点 → 平滑化後 {smoothed?.points.length ?? 0}
+        点・適用 {smoothed?.iterationsApplied ?? 0}
+        回。設定を変えたら「この写真を使う」で確定してください。
+      </p>
+      {smoothed?.warning && <p role="status">{smoothed.warning}</p>}
       <div className="contour-grid">
-        {(['photo', 'mask', 'outline'] as const).map((mode) => (
+        {(['photo', 'mask', 'original', 'outline'] as const).map((mode) => (
           <figure key={mode}>
             <figcaption>
               {mode === 'photo'
                 ? '写真＋外周'
                 : mode === 'mask'
                   ? '人物二値マスク'
-                  : '外周のみ（内部の穴なし）'}
+                  : mode === 'original'
+                    ? '平滑化前（元の輪郭）'
+                    : '平滑化後'}
             </figcaption>
             <InspectionCanvas
               mask={mask}
-              points={points}
+              points={
+                mode === 'original' || mode === 'mask'
+                  ? points
+                  : (smoothed?.points ?? [])
+              }
               blob={usePhoto ? photo.blob : undefined}
               mode={mode}
             />
@@ -178,7 +250,7 @@ export function ContourInspection({ photo }: { photo: CapturedPerson | null }) {
         ))}
       </div>
       <p>
-        表示用の線だけを滑らかにしています。元の輪郭点と道路への変換処理は分けています。確認用の輪郭は画像の左上が原点で、右が+x、下が+yです。
+        元の輪郭と平滑化後の点列を両方保持します。道路への変換・カーブ半径の保証は次の処理で行います。確認用の輪郭は画像の左上が原点で、右が+x、下が+yです。
       </p>
     </details>
   );

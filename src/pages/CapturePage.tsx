@@ -1,7 +1,9 @@
 import {
-  smoothPreviewContour,
+  smoothClosedContour,
+  DEFAULT_SMOOTHING,
   previewContourPath,
 } from '../image-processing/previewContour';
+import type { SmoothingOptions } from '../image-processing/previewContour';
 import { ContourInspection } from '../components/ContourInspection';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CapturedPerson } from '../capture/capture';
@@ -14,13 +16,22 @@ type Props = {
 
 export default function CapturePage({ captured, onConfirm }: Props) {
   const [photo, setPhoto] = useState<CapturedPerson | null>(captured);
-  const displayOutline = useMemo(
+  const [smoothing, setSmoothing] = useState<SmoothingOptions>(
+    captured?.smoothingOptions ?? DEFAULT_SMOOTHING,
+  );
+  const smoothed = useMemo(
     () =>
       photo?.outline
-        ? smoothPreviewContour(photo.outline.points, photo.width, photo.height)
-        : [],
-    [photo],
+        ? smoothClosedContour(
+            photo.outline.points,
+            photo.width,
+            photo.height,
+            smoothing,
+          )
+        : null,
+    [photo, smoothing],
   );
+  const displayOutline = smoothed?.points ?? [];
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const generation = useRef(0);
@@ -188,7 +199,16 @@ export default function CapturePage({ captured, onConfirm }: Props) {
             <button
               className="capture-primary"
               disabled={!photo.outline}
-              onClick={() => onConfirm(photo)}
+              onClick={() =>
+                onConfirm({
+                  ...photo,
+                  smoothedOutline:
+                    photo.outline && smoothed
+                      ? { ...photo.outline, points: smoothed.points }
+                      : undefined,
+                  smoothingOptions: { ...smoothing },
+                })
+              }
             >
               この写真を使う
             </button>
@@ -200,7 +220,15 @@ export default function CapturePage({ captured, onConfirm }: Props) {
           写真を選択しました。画像と輪郭を保持しました。黄色い線がコースの形のイメージです。実際の道路への変換は次のステップで追加します。
         </p>
       )}
-      <ContourInspection photo={photo} />
+      {smoothed?.warning && <p role="status">{smoothed.warning}</p>}
+      <ContourInspection
+        photo={photo}
+        smoothing={smoothing}
+        onSmoothingChange={(options) => {
+          setSmoothing(options);
+          onConfirm(null);
+        }}
+      />
       <p className="capture-note">
         写真はブラウザ内で処理し、サーバーには送信しません。黄色い線は推定した身体の外周です。内側の穴や、離れた小さな領域は含めません。写真はひとりで写ったものを選んでください。初回の認識にはインターネット接続が必要です。HEIC形式を読み込めない場合はJPEGに変換してください。
       </p>
