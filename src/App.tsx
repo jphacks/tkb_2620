@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { CapturedPerson } from './capture/capture';
 import { Button } from './components/Button';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { useRoom } from './socket/useRoom';
@@ -10,7 +11,7 @@ import PedalPage from './pages/PedalPage';
 import ResultPage from './pages/ResultPage';
 const pages = [
   { label: 'ホーム', View: HomePage },
-  { label: '撮影', View: CapturePage },
+  { label: '写真', View: null },
   { label: 'ゲーム', View: GamePage },
   { label: 'ハンドル', View: SteeringPage },
   { label: 'ペダル', View: PedalPage },
@@ -18,6 +19,7 @@ const pages = [
 ];
 export default function App() {
   const [active, setActive] = useState(0);
+  const [captured, setCaptured] = useState<CapturedPerson | null>(null);
   const { connected } = useRoom();
   const View = pages[active].View;
   return (
@@ -40,7 +42,11 @@ export default function App() {
         ))}
       </nav>
       <main>
-        <View />
+        {View ? (
+          <View />
+        ) : (
+          <CapturePage captured={captured} onConfirm={setCaptured} />
+        )}
       </main>
       <footer>開発用のひな形です。ゲーム機能はこれから実装します。</footer>
     </div>
