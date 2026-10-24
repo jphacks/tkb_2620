@@ -116,23 +116,13 @@ export default function CourseReadyPage({
     <section className="course-ready">
       <p className="eyebrow">新規受付 2/2・ルート</p>
       <h1>配達ルートができた！</h1>
-      <p>
-        赤い丸がSTARTです。ここから反時計回りに一周します。壁の色は写真の人物の色です。
-      </p>
       <CourseMap course={course} photo={mapPhoto} />
-      <p className="course-note">
-        人物写真は今回の初回プレイだけ表示します。写真は保存・送信しません。
-      </p>
       <p className="course-facts">
         一周 {courseLength(course).toFixed(0)}m ・ 道幅{' '}
         {course.roadWidth.toFixed(1)}m ・{' '}
         {course.captureMode === 'full_body' ? '全身' : '上半身・見切れ'}
       </p>
-      {warning && (
-        <p className="course-note">
-          曲がりきれない急カーブが残っています。ゆっくり走ってください。
-        </p>
-      )}
+      {warning && <p className="course-note">急カーブあり。ゆっくり走ろう。</p>}
       <form
         className="course-name"
         onSubmit={(event) => {
@@ -149,10 +139,7 @@ export default function CourseReadyPage({
           autoComplete="off"
           onChange={(event) => setName(event.target.value)}
         />
-        <small>
-          {MAX_COURSE_NAME_LENGTH}文字まで。空欄なら「{DEFAULT_COURSE_NAME}
-          」になります。
-        </small>
+        <small>{MAX_COURSE_NAME_LENGTH}文字まで</small>
         <div className="capture-actions">
           <button className="capture-primary" type="submit">
             このルートで出発準備へ

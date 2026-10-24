@@ -13,7 +13,6 @@ import {
   type SavedCourse,
 } from '../db/courseRow';
 import {
-  FORGOTTEN_AFTER_DAYS,
   memoryFade,
   memoryScore,
   sortByMemory,
@@ -89,10 +88,6 @@ export function SavedCourses({
   return (
     <div className="card saved-courses">
       <h2>思い出のコース</h2>
-      <p className="saved-courses-note">
-        配達しないコースは少しずつ色あせていき（エビングハウスの忘却曲線）、
-        {FORGOTTEN_AFTER_DAYS}日配達しないと一覧から消えます。
-      </p>
       {state.kind === 'loading' && <p>読み込み中…</p>}
       {state.kind === 'error' && (
         <>
@@ -150,9 +145,7 @@ export function SavedCourses({
             })}
           </ul>
         ) : (
-          <p>
-            まだ配達したコースはありません。受付の「新規受付」からコースをつくってみよう。
-          </p>
+          <p>まだコースがありません。</p>
         ))}
     </div>
   );

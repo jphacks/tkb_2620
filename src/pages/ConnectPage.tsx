@@ -12,12 +12,12 @@ const crew: {
   {
     role: 'steering',
     title: 'ハンドル係',
-    how: 'スマホを横に持って、ハンドルのように回します。',
+    how: '横に持って、回す',
   },
   {
     role: 'pedal',
     title: 'ペダル係',
-    how: 'スマホを縦に持って、奥へ倒すとアクセル、手前でブレーキ。',
+    how: '縦に持って、奥でアクセル・手前でブレーキ',
   },
 ];
 
@@ -53,9 +53,6 @@ export default function ConnectPage({
         <div>
           <p className="eyebrow">出発前の点呼</p>
           <h1 id="connect-title">スマホで配達員を登録</h1>
-          <p>
-            それぞれのスマホで、自分の係のQRコードを読み取ってください。ふたりそろったら出発できます。
-          </p>
         </div>
         <div className="connect-route" aria-label="本日の配達ルート">
           <CourseThumbnail course={course} />

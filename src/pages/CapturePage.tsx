@@ -158,9 +158,7 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
           {notice}
         </p>
       )}
-      <p>
-        ひとりの人物写真を選んでください。全身でも、上半身だけでもOK。身体の縁を黄色い線で表示し、見切れた部分は写真の端に沿って直線でつなぎます。
-      </p>
+      <p>ひとりで写った写真を選んでね。上半身だけでもOK。</p>
       <div className="capture-frame" aria-busy={busy}>
         {photo ? (
           <>
@@ -316,7 +314,7 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
       </div>
       {captured && !busy && (
         <p className="capture-confirmed" role="status">
-          写真を選択しました。黄色い線がコースの形のイメージです。
+          黄色い線が道の形になります。
         </p>
       )}
       {smoothed?.warning && <p role="status">{smoothed.warning}</p>}
@@ -331,9 +329,7 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
           道路の形を整えられませんでした。別の写真を選ぶか、もう一度判定してください。
         </p>
       )}
-      <p className="capture-note">
-        写真はブラウザ内で処理し、サーバーには送信しません。黄色い線は推定した身体の外周です。内側の穴や、離れた小さな領域は含めません。写真はひとりで写ったものを選んでください。初回の認識にはインターネット接続が必要です。HEIC形式を読み込めない場合はJPEGに変換してください。
-      </p>
+      <p className="capture-note">写真は送信・保存しません。</p>
     </section>
   );
 }

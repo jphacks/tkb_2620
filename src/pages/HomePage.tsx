@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { DeliveryGuide } from '../components/DeliveryGuide';
+
 /**
  * ホーム＝配送センターの受付（#26）。
  * 新しいコースをつくる（新規受付）か、前につくったコースで走る（再配達）かを選ぶ。
@@ -15,6 +18,7 @@ export default function HomePage({
   /** DB が使えないときは「再配達」を出さない */
   hasMemories?: boolean;
 }) {
+  const [guide, setGuide] = useState(false);
   return (
     <section className="home" aria-labelledby="home-title">
       <p className="eyebrow">ふたりの配送センター</p>
@@ -25,9 +29,6 @@ export default function HomePage({
         <button type="button" className="route-card" onClick={onNewCourse}>
           <span className="route-card-label">新規受付</span>
           <strong className="route-card-title">新しいコースで遊ぶ</strong>
-          <span className="route-card-text">
-            写真のポーズから、ふたりだけの道をつくります。
-          </span>
           <span className="route-card-go" aria-hidden="true">
             写真を選ぶ →
           </span>
@@ -36,20 +37,25 @@ export default function HomePage({
           <button type="button" className="route-card" onClick={onMemories}>
             <span className="route-card-label">再配達</span>
             <strong className="route-card-title">思い出のコースで遊ぶ</strong>
-            <span className="route-card-text">
-              前につくったコースで、もう一度届けに行きます。
-            </span>
             <span className="route-card-go" aria-hidden="true">
               コースを選ぶ →
             </span>
           </button>
         )}
       </div>
-      <p className="home-sample">
+      <p className="home-sub">
+        <button
+          type="button"
+          className="guide-button"
+          onClick={() => setGuide(true)}
+        >
+          はじめての配達
+        </button>
         <button type="button" className="link-button" onClick={onSample}>
           おためし便：サンプルコースで走る
         </button>
       </p>
+      {guide && <DeliveryGuide onClose={() => setGuide(false)} />}
     </section>
   );
 }
