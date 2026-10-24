@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "preview": "vite preview --host 0.0.0.0",
-    "test:capture": "node --test tests/capture.test.ts"
+    "test:capture": "node --test tests/capture.test.ts",
+    "test:curves": "node --test tests/curves.test.ts"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.1",

@@ -8,6 +8,11 @@ import {
   smoothClosedContour,
   previewContourPath,
 } from '../image-processing/previewContour';
+import {
+  correctSharpCurves,
+  DEFAULT_CURVE_CORRECTION,
+} from '../image-processing/correctCurves';
+import type { CurveCorrectionResult } from '../image-processing/correctCurves';
 import { useEffect, useRef, useState } from 'react';
 import type { CapturedPerson } from '../capture/capture';
 import { extractOuterContour } from '../image-processing/extractContour';
@@ -40,11 +45,21 @@ function InspectionCanvas({
   points,
   blob,
   mode,
+  sharp = [],
 }: {
   mask: BinaryPersonMask;
   points: OutlinePoint[];
   blob?: Blob;
-  mode: 'photo' | 'mask' | 'outline' | 'original' | 'resampled';
+  mode:
+    | 'photo'
+    | 'mask'
+    | 'outline'
+    | 'original'
+    | 'resampled'
+    | 'curvesBefore'
+    | 'curvesAfter';
+  /** Indices of points drawn in red as sharp curves. */
+  sharp?: number[];
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -84,7 +99,10 @@ function InspectionCanvas({
       }
       if (mode !== 'mask' && points.length) {
         const path = new Path2D(
-          mode === 'original' || mode === 'resampled'
+          mode === 'original' ||
+            mode === 'resampled' ||
+            mode === 'curvesBefore' ||
+            mode === 'curvesAfter'
             ? points
                 .map(
                   (p, i) =>
@@ -112,13 +130,29 @@ function InspectionCanvas({
             context.fill();
           }
         }
+        if (mode === 'curvesBefore' || mode === 'curvesAfter') {
+          context.fillStyle = '#ff2d2d';
+          for (const index of sharp) {
+            const p = points[index];
+            if (!p) continue;
+            context.beginPath();
+            context.arc(
+              p.x * mask.width,
+              p.y * mask.height,
+              Math.max(1, mask.width / 120),
+              0,
+              Math.PI * 2,
+            );
+            context.fill();
+          }
+        }
       }
     }
     void draw();
     return () => {
       cancelled = true;
     };
-  }, [mask, points, blob, mode]);
+  }, [mask, points, blob, mode, sharp]);
   return (
     <canvas
       ref={canvas}
@@ -128,11 +162,15 @@ function InspectionCanvas({
           ? '人物二値マスク。白が人物、黒が背景'
           : mode === 'resampled'
             ? '等間隔に配置した輪郭点'
-            : mode === 'original'
-              ? '平滑化前の輪郭'
-              : mode === 'outline'
-                ? '平滑化後の輪郭'
-                : '写真と抽出輪郭の重ね合わせ'
+            : mode === 'curvesBefore'
+              ? '急カーブ補正前の輪郭。赤い点が半径の小さい急カーブ'
+              : mode === 'curvesAfter'
+                ? '急カーブ補正後の輪郭。赤い点は補正しきれなかった急カーブ'
+                : mode === 'original'
+                  ? '平滑化前の輪郭'
+                  : mode === 'outline'
+                    ? '平滑化後の輪郭'
+                    : '写真と抽出輪郭の重ね合わせ'
       }
     />
   );
@@ -187,11 +225,21 @@ export function ContourInspection({
       sampleError =
         cause instanceof Error ? cause.message : '等間隔化に失敗しました。';
     }
-  const normalizedSamples =
-    sampled?.points.map((p) => ({
-      x: p.x / (width * resampling.metersPerPixel),
-      y: p.y / (height * resampling.metersPerPixel),
-    })) ?? [];
+  const toNormalized = (p: OutlinePoint) => ({
+    x: p.x / (width * resampling.metersPerPixel),
+    y: p.y / (height * resampling.metersPerPixel),
+  });
+  const normalizedSamples = sampled?.points.map(toNormalized) ?? [];
+  let corrected: CurveCorrectionResult | null = null,
+    correctionError = '';
+  if (sampled)
+    try {
+      corrected = correctSharpCurves(sampled);
+    } catch (cause) {
+      correctionError =
+        cause instanceof Error ? cause.message : '急カーブを補正できません。';
+    }
+  const normalizedCorrected = corrected?.contour.points.map(toNormalized) ?? [];
   return (
     <details className="card contour-inspection">
       <summary>輪郭の検証・平滑化の調整</summary>
@@ -316,42 +364,83 @@ export function ContourInspection({
           m。赤い点が等間隔の位置です。最後から最初まで同じ間隔でつながります。
         </p>
       )}
+      {correctionError && <p role="alert">{correctionError}</p>}
+      {corrected && (
+        <>
+          <p role="status">
+            急カーブ（3点を通る円の半径
+            {DEFAULT_CURVE_CORRECTION.minTurnRadius}m未満）：補正前{' '}
+            {corrected.before.sharp.length}点（最小半径
+            {formatRadius(corrected.before.minRadius)}）→ 補正後{' '}
+            {corrected.after.sharp.length}点（最小半径
+            {formatRadius(corrected.after.minRadius)}）。補正
+            {corrected.iterationsApplied}回・最大移動
+            {corrected.maxShift.toFixed(2)}m（上限
+            {DEFAULT_CURVE_CORRECTION.maxDisplacement}m）。
+          </p>
+          {corrected.warning && <p role="alert">{corrected.warning}</p>}
+        </>
+      )}
       <div className="contour-grid">
-        {(['photo', 'mask', 'original', 'outline', 'resampled'] as const).map(
-          (mode) => (
-            <figure key={mode}>
-              <figcaption>
-                {mode === 'photo'
-                  ? '写真＋外周'
-                  : mode === 'mask'
-                    ? '人物二値マスク'
-                    : mode === 'original'
-                      ? '平滑化前（元の輪郭）'
-                      : mode === 'resampled'
-                        ? '等間隔に配置した点'
-                        : '平滑化後'}
-              </figcaption>
-              <InspectionCanvas
-                mask={mask}
-                points={
-                  mode === 'resampled'
-                    ? normalizedSamples
+        {(
+          [
+            'photo',
+            'mask',
+            'original',
+            'outline',
+            'resampled',
+            'curvesBefore',
+            'curvesAfter',
+          ] as const
+        ).map((mode) => (
+          <figure key={mode}>
+            <figcaption>
+              {mode === 'photo'
+                ? '写真＋外周'
+                : mode === 'mask'
+                  ? '人物二値マスク'
+                  : mode === 'original'
+                    ? '平滑化前（元の輪郭）'
+                    : mode === 'resampled'
+                      ? '等間隔に配置した点'
+                      : mode === 'curvesBefore'
+                        ? '急カーブ補正前（赤：急カーブ）'
+                        : mode === 'curvesAfter'
+                          ? '急カーブ補正後（赤：残った急カーブ）'
+                          : '平滑化後'}
+            </figcaption>
+            <InspectionCanvas
+              mask={mask}
+              points={
+                mode === 'resampled' || mode === 'curvesBefore'
+                  ? normalizedSamples
+                  : mode === 'curvesAfter'
+                    ? normalizedCorrected
                     : mode === 'original' || mode === 'mask'
                       ? points
                       : (smoothed?.points ?? [])
-                }
-                blob={usePhoto ? photo.blob : undefined}
-                mode={mode}
-              />
-            </figure>
-          ),
-        )}
+              }
+              blob={usePhoto ? photo.blob : undefined}
+              mode={mode}
+              sharp={
+                mode === 'curvesBefore'
+                  ? corrected?.before.sharp
+                  : mode === 'curvesAfter'
+                    ? corrected?.after.sharp
+                    : undefined
+              }
+            />
+          </figure>
+        ))}
       </div>
       <p>
         元の輪郭と平滑化後の点列を両方保持します。道路への変換・カーブ半径の保証は次の処理で行います。確認用の輪郭は画像の左上が原点で、右が+x、下が+yです。
       </p>
     </details>
   );
+}
+function formatRadius(radius: number) {
+  return Number.isFinite(radius) ? `${radius.toFixed(2)}m` : '直線';
 }
 function xLabel(mask: BinaryPersonMask) {
   return `${mask.width}×${mask.height}px`;
