@@ -185,7 +185,8 @@ export function GameCanvas({
           </div>
         </div>
       )}
-      {pausedReason && !status.finished && (
+      {/* 一時停止の表示はスタート前だけ。レース中は止めずに走り続ける */}
+      {pausedReason && !status.finished && status.time === 0 && (
         <div
           className="goal-overlay pause-overlay"
           role="alertdialog"
