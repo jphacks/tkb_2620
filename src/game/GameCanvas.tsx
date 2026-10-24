@@ -1,13 +1,22 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { CourseData } from '../../shared/course';
 import type { createScene, DrivingStatus } from './createScene';
+import type { DriveInput } from './updateGame';
 export function GameCanvas({
   course,
   toolbarExtra,
+  getRemoteInput,
 }: {
   course: CourseData;
   toolbarExtra?: ReactNode;
+  /** スマホからの入力（#14） */
+  getRemoteInput?: () => DriveInput | null;
 }) {
+  // 3D画面を作り直さずに最新の関数を使う
+  const remoteInput = useRef(getRemoteInput);
+  useEffect(() => {
+    remoteInput.current = getRemoteInput;
+  }, [getRemoteInput]);
   const container = useRef<HTMLDivElement>(null),
     scene = useRef<ReturnType<typeof createScene> | null>(null);
   const [error, setError] = useState(''),
@@ -25,7 +34,12 @@ export function GameCanvas({
     import('./createScene')
       .then(({ createScene }) => {
         if (cancelled) return;
-        scene.current = createScene(element, course, setStatus);
+        scene.current = createScene(
+          element,
+          course,
+          setStatus,
+          () => remoteInput.current?.() ?? null,
+        );
         setFollowing(true);
         setError('');
       })

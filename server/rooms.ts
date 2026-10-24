@@ -97,3 +97,14 @@ export function leaveRoom(
   }
   return toState(room);
 }
+
+/** 操作を送ってきた端末の担当と、届け先のPC。担当として参加していなければ null。 */
+export function getController(
+  socketId: string,
+): { role: ControllerRole; hostId: string } | null {
+  const info = socketToRoom.get(socketId);
+  if (!info?.role) return null;
+  const room = rooms.get(info.roomId);
+  if (!room || room[info.role] !== socketId) return null;
+  return { role: info.role, hostId: room.hostId };
+}

@@ -4,7 +4,8 @@ import type {
   ClientToServerEvents,
   ServerToClientEvents,
 } from '../shared/socket.js';
-import { createRoom, joinRoom, leaveRoom } from './rooms.js';
+import { createRoom, getController, joinRoom, leaveRoom } from './rooms.js';
+import { sanitizeUnit } from '../shared/controls.js';
 
 const port = Number(process.env.PORT ?? 3001);
 if (!Number.isInteger(port) || port < 1 || port > 65535)
@@ -44,6 +45,22 @@ io.on('connection', (socket) => {
     socket.join(result.state.roomId);
     socket.emit('room:joined', { ...result.state, role });
     io.to(result.state.roomId).emit('room:update', result.state);
+  });
+  // スマホの操作をPCへ中継する。担当外の値は捨て、範囲外の値は丸める（#14）
+  socket.on('control:input', (data) => {
+    const controller = getController(socket.id);
+    if (!controller || typeof data !== 'object' || data === null) return;
+    const input =
+      controller.role === 'steering'
+        ? { steering: sanitizeUnit(data.steering, -1) }
+        : {
+            throttle: sanitizeUnit(data.throttle),
+            brake: sanitizeUnit(data.brake),
+          };
+    io.to(controller.hostId).emit('control:input', {
+      ...input,
+      role: controller.role,
+    });
   });
   socket.on('disconnect', () => {
     const updated = leaveRoom(socket.id);
