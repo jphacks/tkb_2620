@@ -1,10 +1,8 @@
-import { PersonColors } from '../components/PersonColors';
-import type { PhotoColorResult } from '../components/PersonColors';
+import { usePhotoColors } from '../capture/usePhotoColors';
 import {
   DEFAULT_RESAMPLING,
   resamplePhotoContour,
 } from '../image-processing/resampleContour';
-import type { ResamplingOptions } from '../image-processing/resampleContour';
 import { correctSharpCurves } from '../image-processing/correctCurves';
 import { mapCourseColors } from '../image-processing/mapCourseColors';
 import {
@@ -12,8 +10,6 @@ import {
   DEFAULT_SMOOTHING,
   previewContourPath,
 } from '../image-processing/previewContour';
-import type { SmoothingOptions } from '../image-processing/previewContour';
-import { ContourInspection } from '../components/ContourInspection';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CapturedPerson } from '../capture/capture';
 import { readPhoto } from '../capture/capture';
@@ -26,15 +22,10 @@ type Props = {
 };
 
 export default function CapturePage({ captured, onConfirm, notice }: Props) {
-  const [colorResult, setColorResult] = useState<PhotoColorResult>(
-    captured?.colorExtraction
-      ? { blob: captured.blob, result: captured.colorExtraction }
-      : null,
-  );
   const [photo, setPhoto] = useState<CapturedPerson | null>(captured);
-  const [smoothing, setSmoothing] = useState<SmoothingOptions>(
-    captured?.smoothingOptions ?? DEFAULT_SMOOTHING,
-  );
+  const colors = usePhotoColors(photo);
+  const smoothing = DEFAULT_SMOOTHING;
+  const resampling = DEFAULT_RESAMPLING;
   // 輪郭を作れなかったときは画面を止めず、理由を出して写真を選び直してもらう（#22）
   const outlineResult = useMemo(() => {
     if (!photo?.outline) return { result: null, error: '' };
@@ -60,9 +51,6 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
   }, [photo, smoothing]);
   const smoothed = outlineResult.result;
   const displayOutline = smoothed?.points ?? [];
-  const [resampling, setResampling] = useState<ResamplingOptions>(
-    captured?.resamplingOptions ?? DEFAULT_RESAMPLING,
-  );
   const resampled = useMemo(() => {
     if (!photo || !smoothed) return { result: null, error: '' };
     try {
@@ -91,8 +79,7 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
       return null;
     }
   }, [resampled]);
-  const photoColors =
-    photo && colorResult?.blob === photo.blob ? colorResult.result : null;
+  const photoColors = colors.result;
   const courseColors = useMemo(() => {
     if (!photo?.outline || !photoColors || !curveCorrection) return null;
     try {
@@ -244,6 +231,12 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
           photo?.recognitionMessage && <p>{photo.recognitionMessage}</p>
         )}
       </div>
+      {colors.busy && <p role="status">コースの色を準備しています…</p>}
+      {colors.error && (
+        <p className="capture-error" role="alert">
+          {colors.error}
+        </p>
+      )}
       {error && (
         <p className="capture-error" role="alert">
           {error}
@@ -296,15 +289,14 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
                 !photo.outline ||
                 !smoothed ||
                 !resampled.result ||
-                colorResult?.blob !== photo.blob
+                !photoColors ||
+                colors.busy ||
+                !curveCorrection
               }
               onClick={() =>
                 onConfirm({
                   ...photo,
-                  colorExtraction:
-                    colorResult?.blob === photo.blob
-                      ? colorResult.result
-                      : undefined,
+                  colorExtraction: photoColors ?? undefined,
                   smoothedOutline:
                     photo.outline && smoothed
                       ? { ...photo.outline, points: smoothed.points }
@@ -324,7 +316,7 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
       </div>
       {captured && !busy && (
         <p className="capture-confirmed" role="status">
-          写真を選択しました。画像と輪郭を保持しました。黄色い線がコースの形のイメージです。実際の道路への変換は次のステップで追加します。
+          写真を選択しました。黄色い線がコースの形のイメージです。
         </p>
       )}
       {smoothed?.warning && <p role="status">{smoothed.warning}</p>}
@@ -334,25 +326,11 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
         </p>
       )}
       {resampled.error && <p role="alert">{resampled.error}</p>}
-      <PersonColors
-        photo={photo}
-        onResult={setColorResult}
-        onSettingsChange={() => onConfirm(null)}
-      />
-      <ContourInspection
-        photo={photo}
-        colorExtraction={photoColors}
-        smoothing={smoothing}
-        resampling={resampling}
-        onResamplingChange={(options) => {
-          setResampling(options);
-          onConfirm(null);
-        }}
-        onSmoothingChange={(options) => {
-          setSmoothing(options);
-          onConfirm(null);
-        }}
-      />
+      {resampled.result && !curveCorrection && (
+        <p className="capture-error" role="alert">
+          道路の形を整えられませんでした。別の写真を選ぶか、もう一度判定してください。
+        </p>
+      )}
       <p className="capture-note">
         写真はブラウザ内で処理し、サーバーには送信しません。黄色い線は推定した身体の外周です。内側の穴や、離れた小さな領域は含めません。写真はひとりで写ったものを選んでください。初回の認識にはインターネット接続が必要です。HEIC形式を読み込めない場合はJPEGに変換してください。
       </p>
