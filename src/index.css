@@ -230,7 +230,41 @@ button:disabled {
 .person-outline path {
   fill: none;
   stroke: #ffe229;
-  stroke-width: 4px;
+  stroke-width: 6px;
+  stroke-linecap: round;
   stroke-linejoin: round;
   filter: drop-shadow(0 0 1px #332800);
+}
+
+.contour-inspection summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.contour-inspection label {
+  display: inline-flex;
+  gap: 8px;
+  margin: 8px 16px 8px 0;
+  align-items: center;
+}
+.contour-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.contour-grid figure {
+  margin: 0;
+}
+.contour-grid figcaption {
+  margin: 12px 0;
+  font-size: 13px;
+}
+.contour-grid canvas {
+  width: 100%;
+  display: block;
+  background: #17251e;
+}
+@media (max-width: 600px) {
+  .contour-grid {
+    grid-template-columns: 1fr;
+  }
 }

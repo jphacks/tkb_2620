@@ -1,4 +1,13 @@
-import { extractPersonOutline } from '../src/image-processing/extractContour.ts';
+import { closeSmallMaskGaps } from '../src/image-processing/cleanPersonMask.ts';
+import {
+  smoothPreviewContour,
+  previewContourPath,
+} from '../src/image-processing/previewContour.ts';
+import {
+  extractPersonOutline,
+  extractOuterContour,
+  validateContour,
+} from '../src/image-processing/extractContour.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
@@ -160,4 +169,112 @@ test('all four clipped edges close as the photo rectangle; empty masks produce n
     () => extractPersonOutline(new Float32Array(2), 3, 4),
     /Invalid/,
   );
+});
+
+test('binary contour API returns ordered pixel coordinates and rejects invalid inputs', () => {
+  const pixels = extractOuterContour(
+    Uint8Array.from([0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0]),
+    4,
+    4,
+  );
+  assert.deepEqual(pixels, [
+    { x: 1, y: 1 },
+    { x: 3, y: 1 },
+    { x: 3, y: 3 },
+    { x: 1, y: 3 },
+  ]);
+  assert.equal(validateContour(pixels).valid, true);
+  assert.throws(
+    () => extractOuterContour(new Uint8Array(16), 4, 4),
+    /見つかりません/,
+  );
+  assert.throws(
+    () => extractOuterContour(Uint8Array.from([2, 1, 1, 1]), 2, 2),
+    /0または1/,
+  );
+});
+test('invalid loops reject crossings, duplicate points, nonfinite values and zero area', () => {
+  assert.equal(
+    validateContour([
+      { x: 0, y: 0 },
+      { x: 2, y: 2 },
+      { x: 0, y: 2 },
+      { x: 2, y: 0 },
+    ]).valid,
+    false,
+  );
+  assert.equal(
+    validateContour([
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 1, y: 1 },
+      { x: 0, y: 0 },
+    ]).valid,
+    false,
+  );
+  assert.equal(
+    validateContour([
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: NaN, y: 1 },
+    ]).valid,
+    false,
+  );
+  assert.equal(
+    validateContour([
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+    ]).valid,
+    false,
+  );
+  assert.equal(validateContour([]).valid, false);
+});
+
+test('preview smoothing keeps the original and clipped edges while producing a closed curved path', () => {
+  const original = [
+    { x: 0.2, y: 0 },
+    { x: 0.8, y: 0 },
+    { x: 0.8, y: 1 },
+    { x: 0.2, y: 1 },
+  ];
+  const snapshot = structuredClone(original);
+  const smooth = smoothPreviewContour(original, 500, 1000);
+  assert.deepEqual(original, snapshot);
+  assert.equal(validateContour(smooth).valid, true);
+  assert.ok(smooth.some((p) => p.y === 0));
+  assert.ok(smooth.some((p) => p.y === 1));
+  assert.ok(
+    smooth.every(
+      (p) => p.x >= 0.2 - 1e-12 && p.x <= 0.8 + 1e-12 && p.y >= 0 && p.y <= 1,
+    ),
+  );
+  assert.match(previewContourPath(smooth), /^M .*Q .* Z$/);
+  assert.equal(previewContourPath([]), '');
+  assert.deepEqual(smoothPreviewContour([], 500, 1000), []);
+});
+
+test('mask closing joins small wrist cracks but preserves wider body gaps and clipped borders', () => {
+  const width = 11,
+    height = 7;
+  const rows = [
+    '...........',
+    '...........',
+    '.###.####..',
+    '.###.####..',
+    '.###.####..',
+    '...........',
+    '...........',
+  ];
+  const input = Uint8Array.from(rows.join(''), (c) => (c === '#' ? 1 : 0));
+  const closed = closeSmallMaskGaps(input, width, height);
+  assert.equal(closed[3 * width + 4], 1);
+  assert.equal(input[3 * width + 4], 0);
+  const clipped = closeSmallMaskGaps(new Uint8Array(25).fill(1), 5, 5);
+  assert.ok(clipped.every((v) => v === 1));
+  const separated = Uint8Array.from(
+    ['##....##', '##....##', '##....##'].join(''),
+    (c) => (c === '#' ? 1 : 0),
+  );
+  assert.equal(closeSmallMaskGaps(separated, 8, 3)[1 * 8 + 3], 0);
 });
