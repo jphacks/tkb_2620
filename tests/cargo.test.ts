@@ -1,3 +1,4 @@
+import { TRUCK_SCALE } from '../src/game/constants.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
@@ -27,12 +28,12 @@ function assertFits(items: CargoItem[], size = CARGO.size) {
     }
 }
 
-test('defaults: three 0.4 boxes on the current truck bed', () => {
+test('defaults: three boxes scale together with the truck bed', () => {
   assert.equal(CARGO.count, 3);
-  assert.equal(CARGO.size, 0.4);
+  assert.equal(CARGO.size, 0.4 * TRUCK_SCALE);
   assert.deepEqual(
     { width: BED.width, length: BED.length },
-    { width: 1.08, length: 1.39 },
+    { width: 1.08 * TRUCK_SCALE, length: 1.39 * TRUCK_SCALE },
   );
   const items = createCargoLayout();
   assert.equal(items.length, 3);

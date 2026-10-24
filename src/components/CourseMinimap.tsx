@@ -1,3 +1,4 @@
+import { deliveryDestination } from '../game/deliveryDestination';
 import { useMemo } from 'react';
 import type { WallColorStop } from '../../shared/course';
 import type { CapturedPerson } from '../capture/capture';
@@ -41,13 +42,14 @@ export function CourseMinimap({
   const imageFrom = image ? map.project(image.from) : null;
   const imageTo = image ? map.project(image.to) : null;
   const start = map.project(points[0]);
+  const destination = map.project(deliveryDestination(points));
   const current = map.project(position);
   return (
     <aside className="course-minimap" aria-label="コースのミニマップ">
       <svg
         viewBox={`0 0 ${map.size} ${map.size}`}
         role="img"
-        aria-label="固定方向のコース図。赤いピンが現在位置、旗がスタート・ゴール、黄色いバツが荷物を落とした場所です。"
+        aria-label="固定方向のコース図。赤いピンが現在位置、旗がスタート、お家が届け先、黄色いバツが荷物を落とした場所です。"
       >
         {image && imageFrom && imageTo && (
           <image
@@ -97,7 +99,7 @@ export function CourseMinimap({
           );
         })}
         <g transform={`translate(${start.x} ${start.y})`}>
-          <title>START / GOAL</title>
+          <title>START</title>
           <path
             d="M2 0V-22"
             stroke="white"
@@ -116,6 +118,17 @@ export function CourseMinimap({
             fill="#182c27"
           />
         </g>
+        <g transform={`translate(${destination.x} ${destination.y})`}>
+          <title>届け先</title>
+          <path d="M-7 0V-10H7V0Z" fill="#fff2d4" stroke="#384b3d" />
+          <path
+            d="M-10 -10L0 -19L10 -10Z"
+            fill="#cf493c"
+            stroke="white"
+            strokeWidth="1"
+          />
+          <path d="M-2 0V-6H2V0" fill="#78563e" />
+        </g>
         <g transform={`translate(${current.x} ${current.y})`}>
           <title>現在位置</title>
           <path
@@ -129,7 +142,8 @@ export function CourseMinimap({
       </svg>
       <p className="minimap-legend">
         <span>📍 現在位置</span>
-        <span>🏁 START / GOAL</span>
+        <span>🏁 START</span>
+        <span>🏠 届け先</span>
         <span>
           <b className="minimap-drop-key">×</b> 落下地点
         </span>

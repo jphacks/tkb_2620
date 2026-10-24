@@ -1,3 +1,4 @@
+import { TRUCK_SCALE } from './constants.ts';
 /**
  * 積荷（Issue #15）。Three.js・画面に依存しない。
  *
@@ -9,18 +10,18 @@
 /** Usable area of the flatbed, between the side rails and from the tail rail to the cab. */
 export const BED = {
   /** Bed center in truck-local coordinates. */
-  center: { x: 0, y: 0.55, z: -0.395 },
-  width: 1.08,
-  length: 1.39,
+  center: { x: 0, y: 0.55 * TRUCK_SCALE, z: -0.395 * TRUCK_SCALE },
+  width: 1.08 * TRUCK_SCALE,
+  length: 1.39 * TRUCK_SCALE,
 };
 
 export const CARGO = {
   /** Start with one box to check placement, then three (Issue #15). */
   count: 3,
   /** Cardboard box edge length. */
-  size: 0.4,
+  size: 0.4 * TRUCK_SCALE,
   /** Space kept between boxes and from the rails. */
-  gap: 0.08,
+  gap: 0.08 * TRUCK_SCALE,
 };
 
 /** resting: on the bed / sliding: moving on the bed (#16) / falling: left the bed (#17) / lost: gone. */

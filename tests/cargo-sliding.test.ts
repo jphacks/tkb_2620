@@ -100,8 +100,8 @@ test('three boxes remain separated under repeated acceleration, braking and turn
 
 test('contact separates boxes without changing input', () => {
   const items = createCargoLayout(2);
-  items[0].position = { x: -0.34, z: 0 };
-  items[1].position = { x: 0.07, z: 0 };
+  items[0].position = { x: -CARGO.size * 0.75, z: 0 };
+  items[1].position = { x: CARGO.size * 0.25, z: 0 };
   items[1].velocity.x = -2;
   const snapshot = structuredClone(items);
   const next = slideCargo(items, { speed: 0, acceleration: 0, yawRate: 0 });
