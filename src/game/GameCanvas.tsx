@@ -1,11 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { CourseData } from '../../shared/course';
-import type { createScene } from './createScene';
-
-export function GameCanvas({ course }: { course: CourseData }) {
-  const container = useRef<HTMLDivElement>(null);
-  const scene = useRef<ReturnType<typeof createScene> | null>(null);
-  const [error, setError] = useState('');
+import type { createScene, DrivingStatus } from './createScene';
+export function GameCanvas({
+  course,
+  toolbarExtra,
+}: {
+  course: CourseData;
+  toolbarExtra?: ReactNode;
+}) {
+  const container = useRef<HTMLDivElement>(null),
+    scene = useRef<ReturnType<typeof createScene> | null>(null);
+  const [error, setError] = useState(''),
+    [following, setFollowing] = useState(true);
+  const [status, setStatus] = useState<DrivingStatus>({
+    speed: 0,
+    distance: 0,
+    collided: false,
+    active: false,
+  });
   useEffect(() => {
     const element = container.current;
     if (!element) return;
@@ -13,7 +25,8 @@ export function GameCanvas({ course }: { course: CourseData }) {
     import('./createScene')
       .then(({ createScene }) => {
         if (cancelled) return;
-        scene.current = createScene(element, course);
+        scene.current = createScene(element, course, setStatus);
+        setFollowing(true);
         setError('');
       })
       .catch((cause: unknown) => {
@@ -33,15 +46,55 @@ export function GameCanvas({ course }: { course: CourseData }) {
   return (
     <div className="course-preview">
       <div className="course-toolbar">
-        <span>ドラッグで回転 · スクロール／ピンチで拡大</span>
-        <button onClick={() => scene.current?.resetView()}>全体を表示</button>
+        <div className="toolbar-info">
+          <span>↑ / W 加速 / ↓ / S / Space ブレーキ / ← → / A D ハンドル</span>
+          <div className="drive-status">
+            <span>
+              速度 {status.speed.toFixed(1)} <small>unit/s</small>
+            </span>
+            <span>
+              走行距離 {status.distance.toFixed(1)} <small>unit</small>
+            </span>
+            <span>
+              {status.collided
+                ? '壁に接触 — RでSTARTへ'
+                : status.active
+                  ? '走行中'
+                  : '画面をクリックして操作'}
+            </span>
+          </div>
+        </div>
+        {toolbarExtra}
+        <div className="drive-actions">
+          <button
+            onClick={() => {
+              scene.current?.setFollowing(!following);
+              setFollowing(!following);
+            }}
+          >
+            {following ? 'コース全体を見る' : '追従カメラに戻る'}
+          </button>
+          <button
+            onClick={() => {
+              scene.current?.resetTruck();
+              container.current?.focus();
+            }}
+          >
+            STARTに戻す
+          </button>
+        </div>
       </div>
-      {error && (
-        <p role="alert">{error} ブラウザのWebGL対応も確認してください。</p>
-      )}
-      <div className="course-canvas" ref={container} />
+      {error && <p role="alert">{error}</p>}
+      <div
+        className="course-canvas"
+        ref={container}
+        tabIndex={0}
+        role="region"
+        aria-label="キーボードでトラックを操作"
+        onPointerDown={() => container.current?.focus()}
+      />
       <p className="course-caption">
-        チェック柄がSTART、矢印が進行方向です。真上から見て反時計回りに走ります。車両の走行は次のIssueで追加します。
+        反時計回りのコースです。Rでリセット。画面からフォーカスが外れると一時停止します。スマホ操作・荷物・ゴール判定は今後追加します。
       </p>
     </div>
   );

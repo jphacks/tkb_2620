@@ -324,3 +324,240 @@ button:disabled {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+.drive-actions,
+.drive-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.drive-status {
+  padding: 12px 16px;
+  background: #294b37;
+  color: white;
+  justify-content: space-between;
+  font-variant-numeric: tabular-nums;
+}
+.drive-status small {
+  opacity: 0.8;
+}
+.course-canvas:focus-visible {
+  outline: 3px solid #efa747;
+  outline-offset: -3px;
+}
+
+/* Driving view fills the available viewport; controls float over the scene. */
+.app.app-game {
+  max-width: none;
+  width: 100%;
+  height: 100dvh;
+  min-height: 400px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.app-game header {
+  padding: 8px 16px;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.app-game .brand {
+  font-size: 18px;
+}
+.app-game nav {
+  padding: 0 16px 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+.app-game nav button {
+  padding: 5px 13px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.app-game main {
+  padding: 0;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+}
+.app-game footer {
+  display: none;
+}
+.game-page {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+.app-game .course-preview {
+  position: relative;
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  min-height: 0;
+}
+.app-game .course-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.app-game .course-toolbar {
+  position: absolute;
+  z-index: 2;
+  inset: 12px 16px auto;
+  padding: 0;
+  pointer-events: none;
+  align-items: flex-start;
+}
+.app-game .toolbar-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.app-game .toolbar-info > span {
+  background: #ffffffeb;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 12px;
+}
+.app-game .drive-actions {
+  pointer-events: auto;
+  gap: 6px;
+}
+.app-game .drive-actions button {
+  padding: 8px 12px;
+  font-size: 12px;
+  background: #fffffff2;
+}
+.app-game .drive-status {
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: #294b37eb;
+  font-size: 13px;
+  pointer-events: none;
+  gap: 18px;
+}
+.app-game .course-caption {
+  position: absolute;
+  z-index: 2;
+  bottom: 10px;
+  left: 16px;
+  right: 16px;
+  margin: 0;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: #ffffffd9;
+  font-size: 11px;
+  pointer-events: none;
+}
+.app-game [role='alert'] {
+  position: absolute;
+  z-index: 3;
+  top: 120px;
+  left: 16px;
+  right: 16px;
+  background: white;
+  padding: 16px;
+}
+@media (max-width: 650px) {
+  .app-game .course-toolbar {
+    inset: 8px 8px auto;
+    gap: 6px;
+  }
+  .app-game .toolbar-info > span {
+    font-size: 10px;
+    padding: 6px 8px;
+  }
+  .app-game .drive-status {
+    gap: 6px;
+    font-size: 11px;
+  }
+  .app-game .course-caption {
+    left: 8px;
+    right: 8px;
+    font-size: 10px;
+  }
+  .app-game header {
+    padding: 6px 10px;
+  }
+}
+
+.error-text {
+  color: #b3261e;
+  text-align: center;
+}
+
+/* 運転画面の上段: ROOM CODE とスマホ用QR（#13） */
+.room-panel {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin-left: auto;
+  pointer-events: auto;
+}
+.room-panel-waiting,
+.room-code,
+.room-qr {
+  background: #fffffff2;
+  border-radius: 10px;
+  padding: 6px 8px;
+}
+.room-panel-waiting {
+  margin: 0;
+  font-size: 12px;
+}
+.room-code {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+.room-code strong {
+  font-size: 18px;
+  letter-spacing: 0.12em;
+}
+.room-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: inherit;
+  text-decoration: none;
+}
+.room-qr svg {
+  display: block;
+}
+.room-qr-label {
+  font-size: 11px;
+  font-weight: 700;
+}
+.room-qr-state {
+  font-size: 10px;
+  color: #765123;
+}
+.room-qr-state.joined {
+  color: #2e7d4f;
+  font-weight: 700;
+}
+.controller-room {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: white;
+  font-size: 14px;
+}
+@media (max-width: 650px) {
+  .room-panel {
+    margin-left: 0;
+  }
+  .room-qr svg {
+    width: 52px;
+    height: 52px;
+  }
+}
