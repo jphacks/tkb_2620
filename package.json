@@ -20,7 +20,8 @@
     "test:course": "node --test tests/generate-course.test.ts",
     "test:controls": "node --test tests/controls.test.ts",
     "test:lap": "node --test tests/lap.test.ts",
-    "test:score": "node --test tests/score.test.ts"
+    "test:score": "node --test tests/score.test.ts",
+    "test:safety": "node --test tests/safety.test.ts"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.1",

@@ -12,9 +12,16 @@ type Props = {
   captured: CapturedPerson;
   onPlay: (course: CourseData, name: string) => void;
   onRetake: () => void;
+  /** コースを作れなかったとき。撮影画面へ戻す（#22） */
+  onFailed?: (message: string) => void;
 };
 
-export default function CourseReadyPage({ captured, onPlay, onRetake }: Props) {
+export default function CourseReadyPage({
+  captured,
+  onPlay,
+  onRetake,
+  onFailed,
+}: Props) {
   const [course, setCourse] = useState<CourseData | null>(null);
   const [warning, setWarning] = useState('');
   const [error, setError] = useState('');
@@ -52,6 +59,15 @@ export default function CourseReadyPage({ captured, onPlay, onRetake }: Props) {
       window.clearTimeout(timer);
     };
   }, [captured]);
+
+  // 作れなかったら撮影画面へ戻す（#22）。戻り先がなければ下のエラー画面を出す
+  const failed = useRef(onFailed);
+  useEffect(() => {
+    failed.current = onFailed;
+  }, [onFailed]);
+  useEffect(() => {
+    if (error) failed.current?.(error);
+  }, [error]);
 
   if (error)
     return (

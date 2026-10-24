@@ -21,9 +21,11 @@ import { readPhoto } from '../capture/capture';
 type Props = {
   captured: CapturedPerson | null;
   onConfirm: (image: CapturedPerson | null) => void;
+  /** 写真・コースの処理に失敗して戻ってきたときの説明（#22） */
+  notice?: string;
 };
 
-export default function CapturePage({ captured, onConfirm }: Props) {
+export default function CapturePage({ captured, onConfirm, notice }: Props) {
   const [colorResult, setColorResult] = useState<PhotoColorResult>(
     captured?.colorExtraction
       ? { blob: captured.blob, result: captured.colorExtraction }
@@ -33,18 +35,30 @@ export default function CapturePage({ captured, onConfirm }: Props) {
   const [smoothing, setSmoothing] = useState<SmoothingOptions>(
     captured?.smoothingOptions ?? DEFAULT_SMOOTHING,
   );
-  const smoothed = useMemo(
-    () =>
-      photo?.outline
-        ? smoothClosedContour(
-            photo.outline.points,
-            photo.width,
-            photo.height,
-            smoothing,
-          )
-        : null,
-    [photo, smoothing],
-  );
+  // 輪郭を作れなかったときは画面を止めず、理由を出して写真を選び直してもらう（#22）
+  const outlineResult = useMemo(() => {
+    if (!photo?.outline) return { result: null, error: '' };
+    try {
+      return {
+        result: smoothClosedContour(
+          photo.outline.points,
+          photo.width,
+          photo.height,
+          smoothing,
+        ),
+        error: '',
+      };
+    } catch (cause) {
+      return {
+        result: null,
+        error:
+          cause instanceof Error
+            ? `輪郭を作れませんでした：${cause.message}`
+            : '輪郭を作れませんでした。別の写真を選んでください。',
+      };
+    }
+  }, [photo, smoothing]);
+  const smoothed = outlineResult.result;
   const displayOutline = smoothed?.points ?? [];
   const [resampling, setResampling] = useState<ResamplingOptions>(
     captured?.resamplingOptions ?? DEFAULT_RESAMPLING,
@@ -152,6 +166,11 @@ export default function CapturePage({ captured, onConfirm }: Props) {
     <section className="capture-page">
       <p className="eyebrow">STEP 01 · PHOTO</p>
       <h1>写真のポーズが、道になる。</h1>
+      {notice && (
+        <p className="capture-notice" role="alert">
+          {notice}
+        </p>
+      )}
       <p>
         ひとりの人物写真を選んでください。全身でも、上半身だけでもOK。身体の縁を黄色い線で表示し、見切れた部分は写真の端に沿って直線でつなぎます。
       </p>
@@ -275,6 +294,7 @@ export default function CapturePage({ captured, onConfirm }: Props) {
               className="capture-primary"
               disabled={
                 !photo.outline ||
+                !smoothed ||
                 !resampled.result ||
                 colorResult?.blob !== photo.blob
               }
@@ -308,6 +328,11 @@ export default function CapturePage({ captured, onConfirm }: Props) {
         </p>
       )}
       {smoothed?.warning && <p role="status">{smoothed.warning}</p>}
+      {outlineResult.error && (
+        <p className="capture-error" role="alert">
+          {outlineResult.error}
+        </p>
+      )}
       {resampled.error && <p role="alert">{resampled.error}</p>}
       <PersonColors
         photo={photo}

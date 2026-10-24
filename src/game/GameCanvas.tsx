@@ -10,6 +10,9 @@ export function GameCanvas({
   getRemoteInput,
   courseName = 'コース',
   onFinish,
+  pausedReason = null,
+  onKeyboardContinue,
+  onLobby,
 }: {
   course: CourseData;
   toolbarExtra?: ReactNode;
@@ -18,12 +21,22 @@ export function GameCanvas({
   courseName?: string;
   /** ゴールしたときの配送結果（#21） */
   onFinish?: (result: DeliveryResult) => void;
+  /** スマホとの通信が切れた理由。ある間はゲームを止める（#22） */
+  pausedReason?: string | null;
+  /** スマホを待たずにキーボードで続ける */
+  onKeyboardContinue?: () => void;
+  /** ホーム（ロビー）へ戻る */
+  onLobby?: () => void;
 }) {
   // 3D画面を作り直さずに最新の関数を使う
   const remoteInput = useRef(getRemoteInput);
   useEffect(() => {
     remoteInput.current = getRemoteInput;
   }, [getRemoteInput]);
+  const paused = useRef(Boolean(pausedReason));
+  useEffect(() => {
+    paused.current = Boolean(pausedReason);
+  }, [pausedReason]);
   const container = useRef<HTMLDivElement>(null),
     scene = useRef<ReturnType<typeof createScene> | null>(null);
   const [error, setError] = useState(''),
@@ -86,6 +99,7 @@ export function GameCanvas({
           course,
           (next) => handleStatus.current(next),
           () => remoteInput.current?.() ?? null,
+          () => paused.current,
         );
         setFollowing(true);
         setError('');
@@ -166,6 +180,35 @@ export function GameCanvas({
             >
               もう一度
             </button>
+          </div>
+        </div>
+      )}
+      {pausedReason && !status.finished && (
+        <div
+          className="goal-overlay pause-overlay"
+          role="alertdialog"
+          aria-labelledby="pause-title"
+          aria-describedby="pause-reason"
+        >
+          <p className="pause-title" id="pause-title">
+            一時停止中
+          </p>
+          <p id="pause-reason">{pausedReason}</p>
+          <div className="goal-actions">
+            {onKeyboardContinue && (
+              <button
+                onClick={() => {
+                  onKeyboardContinue();
+                  container.current?.focus();
+                }}
+              >
+                キーボードで続ける
+              </button>
+            )}
+            <button onClick={() => scene.current?.resetTruck()}>
+              STARTに戻す
+            </button>
+            {onLobby && <button onClick={onLobby}>ホームへ戻る</button>}
           </div>
         </div>
       )}
