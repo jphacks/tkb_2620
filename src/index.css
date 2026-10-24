@@ -599,3 +599,85 @@ button:disabled {
   margin: 0 0 16px;
   font-size: 12px;
 }
+
+.course-ready h1 {
+  text-wrap: balance;
+}
+.course-generating {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px 0;
+}
+.course-generating svg {
+  width: min(240px, 70vw);
+}
+.generating-track {
+  fill: none;
+  stroke: #c5cfc5;
+  stroke-width: 10;
+  stroke-dasharray: 2 10;
+  stroke-linecap: round;
+}
+.generating-truck {
+  fill: #f2a65a;
+  stroke: #294b37;
+  stroke-width: 2;
+  transform-origin: 100px 100px;
+  /* Counterclockwise, like the course. */
+  animation: generating-drive 1.4s linear infinite reverse;
+}
+@keyframes generating-drive {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .generating-truck {
+    animation: none;
+  }
+}
+.course-map {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  margin: 16px auto;
+  border-radius: 16px;
+}
+.course-facts {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.course-note {
+  border-left: 4px solid #f3ca28;
+  padding-left: 16px;
+}
+.course-name {
+  display: grid;
+  gap: 8px;
+  max-width: 480px;
+  margin: 24px auto 0;
+}
+.course-name label {
+  font-weight: 700;
+}
+.course-name input {
+  font: inherit;
+  padding: 12px 14px;
+  border: 1px solid #c5cfc5;
+  border-radius: 12px;
+}
+.course-name small {
+  color: #576354;
+}
+.game-course-name {
+  align-self: center;
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  background: white;
+  border: 1px solid #c5cfc5;
+  border-radius: 12px;
+  padding: 8px 12px;
+}
