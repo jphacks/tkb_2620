@@ -48,7 +48,7 @@ export function SavedCourses({
         <h2>保存したコース</h2>
         <p>
           データベースの接続先が設定されていません。.env に VITE_SUPABASE_URL と
-          VITE_SUPABASE_ANON_KEY
+          VITE_SUPABASE_PUBLISHABLE_KEY（Publishable key）
           を入れると、作ったコースを保存して、また遊べます。
         </p>
       </div>

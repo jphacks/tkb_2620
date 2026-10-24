@@ -1,7 +1,9 @@
 /**
  * Supabase との通信（Issue #25）。ライブラリは使わず、Supabase の REST API を fetch で呼ぶ。
- * 接続先と公開キーは .env の VITE_SUPABASE_URL・VITE_SUPABASE_ANON_KEY（公開してよい anon キー）。
- * service_role キーは絶対に入れない（ブラウザに公開されるため）。
+ * 接続先と公開キーは .env の VITE_SUPABASE_URL・VITE_SUPABASE_PUBLISHABLE_KEY
+ * （Project Settings → API Keys の Publishable key、sb_publishable_...）。
+ * 旧形式の anon キー（VITE_SUPABASE_ANON_KEY、eyJ... の JWT）でも動く。
+ * Secret key（sb_secret_...）・service_role キーは絶対に入れない（ブラウザに公開されるため）。
  */
 import type { CourseData } from '../../shared/course';
 import {
@@ -12,10 +14,15 @@ import {
 } from './courseRow';
 
 const URL_BASE = (import.meta.env.VITE_SUPABASE_URL ?? '').replace(/\/+$/, '');
-const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
+const API_KEY =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  '';
+/** 旧形式の anon キーは JWT。新形式の Publishable key は JWT ではない */
+const IS_LEGACY_JWT_KEY = API_KEY.startsWith('eyJ');
 
 /** .env に接続先が書かれているか。なければ保存・一覧は使わずに遊べる */
-export const isDatabaseConfigured = Boolean(URL_BASE && ANON_KEY);
+export const isDatabaseConfigured = Boolean(URL_BASE && API_KEY);
 
 const COURSE_COLUMNS =
   'id,name,course_points,wall_color_stops,theme_color,road_width,capture_mode,play_count,created_at,last_played_at';
@@ -26,8 +33,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${URL_BASE}/rest/v1/${path}`, {
     ...init,
     headers: {
-      apikey: ANON_KEY,
-      Authorization: `Bearer ${ANON_KEY}`,
+      // 新形式のキーは apikey ヘッダーだけで渡す（Authorization に入れると JWT として拒否される）
+      apikey: API_KEY,
+      ...(IS_LEGACY_JWT_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
       'Content-Type': 'application/json',
       ...init.headers,
     },

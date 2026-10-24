@@ -178,5 +178,5 @@ QRで参加したスマホで、真ん中のハンドル／ペダルをタップ
 完成画面で「このルートで遊ぶ」を押すと、ゲームを始めると同時にコースをSupabaseに保存します（失敗してもゲームはそのまま遊べ、画面の下に案内が出ます）。ホーム画面の「保存したコース」から選ぶと、そのコースでもう一度遊べます。どちらも遊び始めに `record_play` でプレイ回数と最終プレイ日時を記録します（Memory Score、#30）。
 保存するのはコースのデータ（座標・壁の色・テーマ色・道幅・撮影モード）と名前だけで、元の人物写真は送りません。読み込んだコースは `validateCourseData`（#22）で検査し、壊れていれば一覧に出しません。
 
-使うには `.env` に Supabase の Project URL と anon（public）キーを入れます（`.env.example` 参照、Project Settings → API）。DB は `supabase/migrations/` のSQL（#23 #24）で作ります。
+使うには `.env.example` を `.env` にコピーし、Supabase の Project URL（`VITE_SUPABASE_URL`）と Publishable key（`VITE_SUPABASE_PUBLISHABLE_KEY`、`sb_publishable_...`）を入れます（Project Settings → API Keys）。`.env` は Git に入りません。新形式のキーは `apikey` ヘッダーだけで送ります（旧形式の anon キー `VITE_SUPABASE_ANON_KEY` でも動く）。**Secret key は絶対にどこにも書かないでください。**DB は `supabase/migrations/` のSQL（#23 #24）で作ります。
 ライブラリは使わず、Supabase の REST API を fetch で呼んでいます（`src/db/supabase.ts`）。行とコースの変換は `src/db/courseRow.ts`（`npm run test:db`）。一覧の並び替え・見た目は #28 #31 で作り込みます。
