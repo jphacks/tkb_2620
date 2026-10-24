@@ -18,6 +18,7 @@ import type {
 import type { CapturedPerson } from '../capture/capture';
 import type { OutlinePoint } from './extractContour';
 import { fitRoad } from './fitRoad.ts';
+import type { RoadFitOptions } from './fitRoad';
 import { alignToReference, mapCourseColors } from './mapCourseColors.ts';
 import type { CourseColors } from './mapCourseColors';
 
@@ -76,6 +77,13 @@ export function dominantColor(colors: CourseColors): string {
 const toXY = (p: CoursePoint) => ({ x: p.x, y: p.z });
 const toXZ = (p: OutlinePoint) => ({ x: p.x, z: p.y });
 
+export type CourseBuildOptions = {
+  roadWidth?: number;
+  courseSize?: number;
+  /** How coarsely the photo outline is reshaped into a road (see fitRoad). */
+  fit?: Partial<Omit<RoadFitOptions, 'roadWidth'>>;
+};
+
 export type CourseBuild = {
   course: CourseData;
   /** Set when some turns are still tighter than the truck can take. */
@@ -87,7 +95,8 @@ export function buildCourse(
   {
     roadWidth = DEFAULT_ROAD_WIDTH,
     courseSize = DEFAULT_COURSE_SIZE,
-  }: { roadWidth?: number; courseSize?: number } = {},
+    fit,
+  }: CourseBuildOptions = {},
 ): CourseBuild {
   const corrected = person.curveCorrection?.contour;
   if (!corrected || corrected.points.length < 3)
@@ -96,7 +105,7 @@ export function buildCourse(
     );
   const toGame = gameTransform(corrected.points, courseSize);
   const shaped = corrected.points.map(toGame);
-  const fitted = fitRoad(shaped, roadWidth);
+  const fitted = fitRoad(shaped, roadWidth, fit);
   // Original outline (START first, counterclockwise) in the same game space.
   const mpp = corrected.metersPerPixel ?? 1;
   const reference = person.outline
@@ -139,7 +148,7 @@ export function buildCourse(
 
 export function generateCourse(
   person: CapturedPerson,
-  options: { roadWidth?: number; courseSize?: number } = {},
+  options: CourseBuildOptions = {},
 ): CourseData {
   return buildCourse(person, options).course;
 }
