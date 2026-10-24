@@ -3,6 +3,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { CourseData } from '../../shared/course';
 import { createRoad } from './createRoad';
 import { createTruck } from './createTruck';
+import { createCargo } from './createCargo';
+import { createCargoLayout, remainingCargo } from './cargo';
 import { VEHICLE } from './constants';
 import { createLapTrack, startLap, updateLap, type LapState } from './lap';
 import {
@@ -21,6 +23,9 @@ export type DrivingStatus = {
   /** 走り出してからの時間（秒）。ゴールで止まる（#19） */
   time: number;
   finished: boolean;
+  /** 荷台に残っている荷物と、積んだ数（#15〜#17） */
+  cargoRemaining: number;
+  cargoTotal: number;
 };
 
 export function createScene(
@@ -64,6 +69,10 @@ export function createScene(
   scene.add(light);
   const truck = createTruck();
   scene.add(truck.group);
+  // 荷物はトラックの子：荷台ローカル座標で管理し、トラックと一緒に動く（#15）
+  let cargo = createCargoLayout();
+  const cargoView = createCargo(cargo);
+  truck.group.add(cargoView.group);
   const bounds = new THREE.Box3().setFromObject(group),
     center = bounds.getCenter(new THREE.Vector3()),
     size = bounds.getSize(new THREE.Vector3());
@@ -176,6 +185,9 @@ export function createScene(
   }
   function resetTruck() {
     state = initialTruckState(course);
+    // STARTに戻したら積み直す
+    cargo = createCargoLayout();
+    cargoView.sync(cargo);
     const { center, front } = truckPoints();
     lap = startLap(lapTrack, center, front);
     raceTime = 0;
@@ -259,6 +271,8 @@ export function createScene(
     if (now - lastStatus > 100 || lap.finished !== reportedFinished) {
       reportedFinished = lap.finished;
       onStatus({
+        cargoRemaining: remainingCargo(cargo),
+        cargoTotal: cargo.length,
         speed: state.speed,
         distance: state.distance,
         collided: now < collisionUntil,
