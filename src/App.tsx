@@ -4,6 +4,7 @@ import { Button } from './components/Button';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { RoomPanel } from './components/RoomPanel';
 import { useRoom } from './socket/useRoom';
+import { useRemoteInput } from './socket/useRemoteInput';
 import type { ControllerRole } from '../shared/socket';
 import HomePage from './pages/HomePage';
 import CapturePage from './pages/CapturePage';
@@ -39,6 +40,7 @@ export default function App() {
   const [active, setActive] = useState(0);
   const [captured, setCaptured] = useState<CapturedPerson | null>(null);
   const { connected, room, role, error, createRoom, joinRoom } = useRoom();
+  const getRemoteInput = useRemoteInput(room);
   const [join] = useState(readJoinParams);
   const roomRequested = useRef(false);
 
@@ -80,7 +82,7 @@ export default function App() {
                 ? `ROOM ${room.roomId} に「${roleLabels[role]}」担当で参加中`
                 : `ROOM ${join.roomId} に参加しています...`}
           </p>
-          <Controller />
+          <Controller joined={Boolean(role && room)} />
         </main>
       </div>
     );
@@ -105,6 +107,7 @@ export default function App() {
         {active === GAME_PAGE ? (
           <GamePage
             roomSlot={<RoomPanel connected={connected} room={room} />}
+            getRemoteInput={getRemoteInput}
           />
         ) : View ? (
           <View />

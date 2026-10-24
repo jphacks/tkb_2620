@@ -7,6 +7,7 @@ import {
   initialTruckState,
   updateGame,
   hitsWall,
+  type DriveInput,
   type WallSegment,
 } from './updateGame';
 export type DrivingStatus = {
@@ -20,6 +21,8 @@ export function createScene(
   container: HTMLDivElement,
   course: CourseData,
   onStatus: (status: DrivingStatus) => void = () => {},
+  /** スマホからの入力（#14）。届いていなければ null */
+  getRemoteInput: () => DriveInput | null = () => null,
 ) {
   const { group, edges } = createRoad(course);
   const walls: WallSegment[] = [];
@@ -169,15 +172,29 @@ export function createScene(
     if (disposed) return;
     const elapsed = Math.min((now - previous) / 1000, 0.1);
     previous = now;
-    if (!document.hidden && active) {
+    // スマホの入力はPCの画面にフォーカスがなくても効く
+    const remote = getRemoteInput();
+    if (!document.hidden && (active || remote)) {
+      const keyboard: DriveInput = active
+        ? {
+            throttle: Number(keys.has('ArrowUp') || keys.has('KeyW')),
+            brake: Number(
+              keys.has('ArrowDown') || keys.has('KeyS') || keys.has('Space'),
+            ),
+            steering:
+              Number(keys.has('ArrowLeft') || keys.has('KeyA')) -
+              Number(keys.has('ArrowRight') || keys.has('KeyD')),
+          }
+        : { throttle: 0, brake: 0, steering: 0 };
       state = updateGame(
         state,
         {
-          throttle: keys.has('ArrowUp') || keys.has('KeyW'),
-          brake: keys.has('ArrowDown') || keys.has('KeyS') || keys.has('Space'),
-          steering:
-            Number(keys.has('ArrowLeft') || keys.has('KeyA')) -
-            Number(keys.has('ArrowRight') || keys.has('KeyD')),
+          throttle: Math.max(keyboard.throttle, remote?.throttle ?? 0),
+          brake: Math.max(keyboard.brake, remote?.brake ?? 0),
+          steering: Math.max(
+            -1,
+            Math.min(1, keyboard.steering + (remote?.steering ?? 0)),
+          ),
         },
         elapsed,
         walls,
@@ -192,7 +209,7 @@ export function createScene(
         speed: state.speed,
         distance: state.distance,
         collided: now < collisionUntil,
-        active,
+        active: active || remote !== null,
       });
       lastStatus = now;
     }

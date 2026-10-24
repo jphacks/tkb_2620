@@ -599,3 +599,134 @@ button:disabled {
   margin: 0 0 16px;
   font-size: 12px;
 }
+
+/* スマホの操作画面（#14） */
+.controller {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  text-align: center;
+}
+.controller h1 {
+  margin: 0;
+}
+.controller .eyebrow {
+  margin: 0;
+}
+.controller-hint {
+  margin: 0;
+  font-size: 14px;
+}
+.wheel {
+  position: relative;
+  width: min(52vw, 44vh, 220px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 16px solid #294b37;
+  transition: transform 60ms linear;
+}
+.wheel span {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  width: 10px;
+  height: 30px;
+  margin-left: -5px;
+  border-radius: 5px;
+  background: #efa747;
+}
+.wheel::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 14px;
+  margin-top: -7px;
+  background: #294b37;
+}
+.pedal-gauge {
+  display: flex;
+  gap: 18px;
+}
+.pedal-bar {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  width: 72px;
+  height: min(32vh, 220px);
+  border-radius: 14px;
+  background: #e6e2d6;
+  overflow: hidden;
+}
+.pedal-bar span {
+  width: 100%;
+  transition: height 60ms linear;
+}
+.pedal-bar.accel span {
+  background: #2e7d4f;
+}
+.pedal-bar.brake span {
+  background: #c8443b;
+}
+.pedal-bar small {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  font-weight: 700;
+  color: #27382f;
+}
+.tilt-controls {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+.tilt-message {
+  margin: 0;
+  max-width: 34em;
+  font-size: 13px;
+  color: #765123;
+}
+.hold-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+}
+.hold-button {
+  flex: 1;
+  padding: 18px 12px;
+  font-size: 18px;
+  font-weight: 700;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.hold-button:active {
+  background: #294b37;
+  color: white;
+}
+.hold-button.accel:active {
+  background: #2e7d4f;
+}
+.hold-button.brake:active {
+  background: #c8443b;
+}
+/* 横向きのハンドル画面は左右に並べて1画面に収める */
+@media (orientation: landscape) and (max-height: 500px) {
+  .controller-steering {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    text-align: left;
+  }
+  .controller-steering .wheel {
+    grid-row: 1 / span 5;
+    grid-column: 2;
+  }
+  .controller-steering > :not(.wheel) {
+    grid-column: 1;
+    justify-self: stretch;
+  }
+}
