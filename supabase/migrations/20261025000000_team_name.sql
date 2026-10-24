@@ -1,5 +1,5 @@
 -- ランキングの名前を「チーム名」にし、16文字まで入れられるようにする（Issue #29）
--- 3つ目（20261024020000_schedule_archive.sql）のあとに、Supabase の SQL Editor で実行する。
+-- 3つ目（20261024020000_schedule_delete.sql）のあとに、Supabase の SQL Editor で実行する。
 -- 何度実行しても壊れない。
 --
 -- BODY ROAD はハンドル係とペダル係の2人で遊ぶので、1つの記録に「あやか＆ゆりえ」のような
