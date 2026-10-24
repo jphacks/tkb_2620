@@ -247,7 +247,7 @@ export function GameCanvas({
                     : status.collided
                       ? '壁に接触 — ハンドルを切ってアクセルで復帰'
                       : status.active
-                        ? '走行中'
+                        ? '配達中'
                         : '画面をクリックして操作'
             }
           />
@@ -295,7 +295,7 @@ export function GameCanvas({
       </div>
       {status.introducing && (
         <div className="intro-camera-notice">
-          <p>この道を、ふたりで走ろう。</p>
+          <p>この道を、ふたりで届けよう。</p>
         </div>
       )}
       {status.countdown != null && (
@@ -315,7 +315,7 @@ export function GameCanvas({
           <p className="goal-time">{formatTime(status.time)}</p>
           <div className="goal-actions">
             {onFinish && result && (
-              <button onClick={() => onFinish(result)}>結果を見る</button>
+              <button onClick={() => onFinish(result)}>伝票を見る</button>
             )}
             <button
               onClick={() => {
@@ -360,7 +360,7 @@ export function GameCanvas({
             >
               STARTに戻す
             </button>
-            {onLobby && <button onClick={onLobby}>ホームへ戻る</button>}
+            {onLobby && <button onClick={onLobby}>受付に戻る</button>}
           </div>
         </div>
       )}

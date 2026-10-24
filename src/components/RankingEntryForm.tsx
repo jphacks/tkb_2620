@@ -38,7 +38,7 @@ export function RankingEntryForm({ result }: { result: DeliveryResult }) {
   if (!result.courseId)
     return (
       <p className="ranking-note">
-        このコースは保存できていないため、ランキングには登録できません。
+        このコースは保存できていないため、配達ランキングには登録できません。
       </p>
     );
   const courseId = result.courseId;
@@ -88,7 +88,7 @@ export function RankingEntryForm({ result }: { result: DeliveryResult }) {
         }
       }}
     >
-      <h2>ランキングに登録</h2>
+      <h2>配達ランキングに登録</h2>
       <label>
         チーム名
         <input

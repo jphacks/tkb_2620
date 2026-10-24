@@ -1859,6 +1859,7 @@ button:disabled {
 .memories .saved-courses {
   background: none;
   border: 0;
+  box-shadow: none;
   padding: 0;
 }
 .memories .saved-courses-note {
@@ -1913,17 +1914,19 @@ button:disabled {
   width: 100%;
   align-self: end;
 }
-/* 細い荷札なので、TOP3 は「順位・名前・点」の下に「タイム・荷物」を折り返す */
+/* 細い荷札でも TOP3 は1チーム1行（順位・チーム名・点・タイム・積荷）。
+   チーム名だけ縮めて、収まらなければ「…」にする */
+.memories .ranking-table.compact {
+  font-size: 11px;
+}
 .memories .ranking-table.compact li {
-  grid-template-columns: 2.4em 1fr auto;
-  row-gap: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  gap: 6px;
+  padding: 1px 2px;
+  white-space: nowrap;
 }
-.memories .ranking-table.compact .ranking-time {
-  grid-column: 2;
-  color: var(--muted);
-}
+.memories .ranking-table.compact .ranking-time,
 .memories .ranking-table.compact .ranking-cargo {
-  grid-column: 3;
   color: var(--muted);
 }
 /* 一番よく思い出されているコースには「いちばんの思い出」の印 */
@@ -1955,4 +1958,32 @@ button:disabled {
     padding: 10px 8px;
     font-size: 13px;
   }
+}
+
+/* 配送の世界にそろえる（#26）：カード・枠・ボタンを伝票と同じ紙と線にする */
+.card {
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+  box-shadow: 6px 6px 0 var(--shadow-ink);
+}
+button {
+  border-radius: 8px;
+}
+/* 写真を置く場所は、荷物の受付口（点線の枠）。全身が写ると黄色い実線になる */
+.capture-frame {
+  border: 3px dashed var(--paper-line);
+  border-radius: 6px;
+  background: var(--paper);
+}
+.capture-frame.is-full-body {
+  border-style: solid;
+}
+.course-preview {
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+}
+.app-game .course-preview {
+  border: 0;
+  border-radius: 0;
 }

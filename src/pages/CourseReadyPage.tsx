@@ -75,14 +75,14 @@ export default function CourseReadyPage({
   if (error)
     return (
       <section className="course-ready">
-        <p className="eyebrow">STEP 02 · COURSE</p>
+        <p className="eyebrow">新規受付 2/2・ルート</p>
         <h1>コースを作れませんでした</h1>
         <p className="capture-error" role="alert">
           {error}
         </p>
         <div className="capture-actions">
           <button className="capture-primary" type="button" onClick={onRetake}>
-            撮り直す
+            写真を選び直す
           </button>
         </div>
       </section>
@@ -91,7 +91,7 @@ export default function CourseReadyPage({
   if (!course)
     return (
       <section className="course-ready" aria-busy="true">
-        <p className="eyebrow">STEP 02 · COURSE</p>
+        <p className="eyebrow">新規受付 2/2・ルート</p>
         <h1>コースを作っています…</h1>
         <div className="course-generating" role="status">
           <svg viewBox="0 0 200 200" aria-hidden="true">
@@ -114,8 +114,8 @@ export default function CourseReadyPage({
   const trimmed = name.trim();
   return (
     <section className="course-ready">
-      <p className="eyebrow">STEP 02 · COURSE</p>
-      <h1>コースができた！</h1>
+      <p className="eyebrow">新規受付 2/2・ルート</p>
+      <h1>配達ルートができた！</h1>
       <p>
         赤い丸がSTARTです。ここから反時計回りに一周します。壁の色は写真の人物の色です。
       </p>
@@ -155,10 +155,10 @@ export default function CourseReadyPage({
         </small>
         <div className="capture-actions">
           <button className="capture-primary" type="submit">
-            このルートで遊ぶ
+            このルートで出発準備へ
           </button>
           <button type="button" onClick={onRetake}>
-            撮り直す
+            写真を選び直す
           </button>
         </div>
       </form>

@@ -29,11 +29,9 @@ export default function ResultPage({
   if (!result)
     return (
       <section>
-        <p className="eyebrow">RESULT</p>
-        <h1>走行結果</h1>
-        <p>
-          まだ結果がありません。届け先まで走ると、ここに配送伝票が届きます。
-        </p>
+        <p className="eyebrow">配送伝票</p>
+        <h1>まだ伝票がありません</h1>
+        <p>届け先まで荷物を運ぶと、ここに配送伝票が届きます。</p>
       </section>
     );
 
@@ -104,7 +102,7 @@ export default function ResultPage({
       <div className="result-actions">
         {onRetry && (
           <Button className="primary-button" onClick={onRetry}>
-            もう一度走る
+            もう一度配達する
           </Button>
         )}
         {onHome && <Button onClick={onHome}>受付に戻る</Button>}

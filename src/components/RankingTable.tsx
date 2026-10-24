@@ -12,7 +12,7 @@ export function RankingTable({
   compact?: boolean;
 }) {
   if (!entries.length)
-    return <p className="ranking-empty">まだ記録はありません。</p>;
+    return <p className="ranking-empty">まだ配達記録はありません。</p>;
   return (
     <ol className={compact ? 'ranking-table compact' : 'ranking-table'}>
       {entries.map((entry, index) => (
@@ -27,7 +27,7 @@ export function RankingTable({
             {formatTime(entry.clearTimeMs / 1000)}
           </span>
           <span className="ranking-cargo">
-            荷物 {entry.remainingCargo}/{entry.cargoTotal}
+            積荷 {entry.remainingCargo}/{entry.cargoTotal}
           </span>
         </li>
       ))}

@@ -40,8 +40,8 @@ function readJoinParams(): { roomId: string; role: ControllerRole } | null {
 }
 
 const roleLabels: Record<ControllerRole, string> = {
-  steering: 'ハンドル',
-  pedal: 'アクセル・ブレーキ',
+  steering: 'ハンドル係',
+  pedal: 'ペダル係',
 };
 
 export default function App() {
@@ -161,8 +161,8 @@ export default function App() {
     const statusText = error
       ? error
       : role && room
-        ? `「${roleLabels[role]}」担当で接続済み`
-        : 'ゲームに接続しています...';
+        ? `${roleLabels[role]}として登録しました`
+        : '配送センターに接続しています…';
     return (
       <div className="app">
         {header}
@@ -289,7 +289,7 @@ export default function App() {
                     })
                     .catch((cause: unknown) =>
                       setSaveNotice(
-                        `コースを保存できませんでした。遊ぶことはできます。${cause instanceof Error ? `（${cause.message}）` : ''}`,
+                        `コースを保存できませんでした。配達はそのまま続けられます。${cause instanceof Error ? `（${cause.message}）` : ''}`,
                       ),
                     );
               }}
