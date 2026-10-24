@@ -127,6 +127,9 @@ export function GameCanvas({
           <span>↑ / W 加速 / ↓ / S / Space ブレーキ / ← → / A D ハンドル</span>
           <div className="drive-status">
             <span>
+              積荷 {status.cargoRemaining} / {status.cargoTotal} 個
+            </span>
+            <span>
               タイム <strong>{formatTime(status.time)}</strong>
             </span>
             <span>

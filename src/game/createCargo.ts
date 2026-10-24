@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CARGO, bedToTruck, type CargoItem } from './cargo';
+import { CARGO, bedToTruck, type CargoItem } from './cargo.ts';
 
 /**
  * 段ボールの見た目（Issue #15）。トラックの group の子として荷台に載せる。
@@ -37,10 +37,20 @@ export function createCargo(items: readonly CargoItem[], size = CARGO.size) {
     current.forEach((item, i) => {
       const box = meshes[i];
       if (!box) return;
-      // Falling and lost boxes are handled in #17; until then only boxes on the bed show.
-      box.visible = item.status === 'resting' || item.status === 'sliding';
+      // Lost means undeliverable; landed boxes remain visible until reset.
+      box.visible = true;
+      if (item.fall && (item.status === 'falling' || item.status === 'lost')) {
+        const root = group.parent?.parent;
+        if (box.parent === group && root) root.attach(box);
+        const p = item.fall.position;
+        box.position.set(p.x, p.y, p.z);
+        box.rotation.set(0, item.fall.yaw, 0);
+        return;
+      }
+      if (box.parent !== group) group.attach(box);
+      box.rotation.set(0, 0, 0);
       const p = bedToTruck(item.position);
-      box.position.set(p.x, p.y + size / 2, p.z);
+      box.position.set(p.x, p.y + size / 2 + (item.lift ?? 0), p.z);
     });
   }
   sync(items);
