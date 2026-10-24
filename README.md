@@ -94,7 +94,15 @@ PC画面のQRコードを、それぞれのスマホで読み取ります。ハ�
 
 ### ランキング
 
-<!-- 担当者の実装確認後に追記。 -->
+ゴール後の配送伝票で、ふたりのチーム名（16文字まで）を入れて登録します。ランキングはコースごとに分かれていて、上位3チームだけが残ります。スコアが同じならタイムが短いほう、それも同じなら先に登録したほうが上です。
+
+ホーム画面の「思い出のコース」では、各コースのTOP3（チーム名・スコア・タイム・残った荷物）をそのまま確認できます。写真を使わないサンプルコースにも、専用のランキングがあります。
+
+### 思い出のコース
+
+一度遊んだコースは、ホーム画面に並びます。並び順は、エビングハウスの忘却曲線で計算した「思い出度」の高い順です。遊んだ直後は100で、1時間で約47、1日で約30と下がっていき、遊ばれていないコースほどカードが少しずつ色あせます。
+
+31日遊ばれないと（思い出度 約21、エビングハウスの実験の最後の測定点）、そのコースは忘れられたとみなし、ランキングごと消えます。もう一度遊べば思い出度は100に戻ります。サンプルコースは消えません。
 
 ## 力を入れたこと
 
@@ -146,7 +154,42 @@ flowchart LR
 
 ### データベース・ランキングの詳細
 
-<!-- 担当者の実装確認後に、構成図・テーブル・ランキング仕様を追記。 -->
+データベースはSupabase（PostgreSQL）です。ライブラリは使わず、ブラウザからREST APIを `fetch` で呼びます（[src/db/supabase.ts](src/db/supabase.ts)）。
+
+```mermaid
+erDiagram
+    courses ||--o{ rankings : "TOP3まで"
+    courses {
+        uuid id PK
+        text name "20文字まで"
+        jsonb course_points "道路の中心線"
+        jsonb wall_color_stops "壁の色"
+        text theme_color
+        real road_width
+        int play_count
+        timestamptz created_at
+        timestamptz last_played_at "思い出度の計算に使う"
+    }
+    rankings {
+        uuid id PK
+        uuid course_id FK "コースと一緒に消える"
+        text display_name "チーム名・16文字まで"
+        int score "0〜100"
+        int clear_time_ms
+        int remaining_cargo
+        int cargo_total
+        timestamptz created_at
+    }
+```
+
+- **写真は保存しない**：保存するのはコースの座標・色・道幅・名前だけです。
+- **思い出度は保存しない**：`last_played_at` から、表示のたびにアプリで計算します（[src/game/memoryScore.ts](src/game/memoryScore.ts)）。
+- **ブラウザからできることを絞る**：Row Level Securityと権限で、ブラウザ（Publishable key）からはコースとランキングを読む・新しいコースを保存する・次の2つの関数を呼ぶ、だけにしています。書き換えや削除、ランキングへの直接の書き込みはできません。
+  - `record_play(course_id)`：遊び始めにプレイ回数と最終プレイ日時を更新します。
+  - `submit_ranking(...)`：記録を入れ、4位以下を消して、順位（圏外ならnull）を返します。同時に登録されても4件以上残らないよう、コースの行をロックしてから処理します。
+- **DBを軽く保つ**：`delete_stale_courses(31)` を pg_cron で毎日 03:10（日本時間）に実行し、31日遊ばれていないコースをランキングごと消します。
+
+SQLは [supabase/migrations](supabase/migrations) にあり、ファイル名の順にSupabaseのSQL Editorで実行します。自動削除にはpg_cronの拡張機能を有効にしておく必要があります。データの詳しい仕様は [docs/course-data.md](docs/course-data.md) にまとめています。
 
 ## 今後の展望
 
