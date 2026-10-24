@@ -1401,7 +1401,7 @@ button:disabled {
   font-size: 12px;
 }
 .ranking-table.compact li {
-  grid-template-columns: 2.6em 1fr auto;
+  gap: 8px;
   padding: 0 4px;
 }
 .ranking-table li.mine {

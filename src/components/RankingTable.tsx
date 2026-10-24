@@ -1,7 +1,7 @@
 import { formatTime } from '../game/lap';
 import type { RankingEntry } from '../db/courseRow';
 
-/** コース別TOP3（#29）。highlight は今登録した順位（1〜3） */
+/** コース別TOP3（#29）：順位・名前・スコア・タイム・残り荷物数。highlight は今登録した順位（1〜3）、compact は一覧用の小さい表示 */
 export function RankingTable({
   entries,
   highlight,
@@ -23,16 +23,12 @@ export function RankingTable({
           <span className="ranking-place">{index + 1}位</span>
           <span className="ranking-name">{entry.displayName}</span>
           <span className="ranking-score">{entry.score}点</span>
-          {!compact && (
-            <>
-              <span className="ranking-time">
-                {formatTime(entry.clearTimeMs / 1000)}
-              </span>
-              <span className="ranking-cargo">
-                荷物 {entry.remainingCargo}/{entry.cargoTotal}
-              </span>
-            </>
-          )}
+          <span className="ranking-time">
+            {formatTime(entry.clearTimeMs / 1000)}
+          </span>
+          <span className="ranking-cargo">
+            荷物 {entry.remainingCargo}/{entry.cargoTotal}
+          </span>
         </li>
       ))}
     </ol>
