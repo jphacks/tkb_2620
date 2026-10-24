@@ -28,6 +28,14 @@ export default function ResultPage({
     );
 
   const score = computeScore(result);
+  const deliveryDate = new Date(result.finishedAt)
+    .toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      timeZone: 'Asia/Tokyo',
+    })
+    .replaceAll('/', '.');
   return (
     <section className="result-page">
       <article className="delivery-slip" aria-label="配送完了伝票">
@@ -37,19 +45,19 @@ export default function ResultPage({
             No. {slipNumber(result.finishedAt)}
           </span>
         </header>
-        <div className="slip-stamp" aria-hidden="true">
-          配達
-          <br />
-          完了
-        </div>
         <dl className="slip-rows">
           <div>
-            <dt>お届け日時</dt>
+            <dt>お届け日</dt>
             <dd>
-              {new Date(result.finishedAt).toLocaleString('ja-JP', {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              })}
+              <time
+                className="slip-date-stamp"
+                dateTime={deliveryDate.replaceAll('.', '-')}
+                aria-label={`配達完了日 ${deliveryDate}`}
+              >
+                <span className="slip-date-stamp-heading">配達完了</span>
+                <strong>{deliveryDate}</strong>
+                <span className="slip-date-stamp-office">BODY ROAD</span>
+              </time>
             </dd>
           </div>
           <div>
