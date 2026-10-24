@@ -20,6 +20,7 @@ export type TruckState = {
   distance: number;
   /** ブレーキの効き（0〜1）。踏むとじわっと上がり、離すと素早く抜ける */
   brakePressure: number;
+  wrongWay?: boolean;
 };
 export function initialTruckState(course: CourseData): TruckState {
   const [p, next] = course.points;
@@ -87,12 +88,69 @@ export function hitsWall(state: TruckState, walls: WallSegment[]) {
     return true;
   });
 }
+/** Resolve a contact on the same side of each wall as the previous safe pose.
+ * Keep tangent movement, gently clear the rotated footprint, never cross a wall.
+ */
+function recoverWallContact(
+  previous: TruckState,
+  candidate: TruckState,
+  walls: WallSegment[],
+  dt: number,
+): TruckState | null {
+  const corrected = { ...candidate };
+  for (let pass = 0; pass < 8; pass++) {
+    const contacts = walls.filter((wall) => hitsWall(corrected, [wall]));
+    if (!contacts.length) {
+      const distance = Math.hypot(
+        corrected.x - previous.x,
+        corrected.z - previous.z,
+      );
+      // A contact may only nudge us locally, never teleport to the opposite side.
+      if (
+        distance >
+        Math.max(previous.speed, candidate.speed) * dt + 2 * dt + 0.005
+      )
+        return null;
+      return {
+        ...corrected,
+        speed: Math.min(candidate.speed, 2),
+        collided: true,
+        distance: previous.distance + distance,
+      };
+    }
+    for (const { a, b } of contacts) {
+      const dx = b.x - a.x,
+        dz = b.z - a.z,
+        length = Math.hypot(dx, dz);
+      if (length < 1e-9) return null;
+      let nx = -dz / length,
+        nz = dx / length;
+      const side = (previous.x - a.x) * nx + (previous.z - a.z) * nz;
+      if (side < 0) {
+        nx = -nx;
+        nz = -nz;
+      }
+      const sin = Math.sin(corrected.yaw),
+        cos = Math.cos(corrected.yaw);
+      const support =
+        (VEHICLE.width / 2 + 0.025) * Math.abs(nx * cos - nz * sin) +
+        (VEHICLE.length / 2 + 0.025) * Math.abs(nx * sin + nz * cos);
+      const separation = (corrected.x - a.x) * nx + (corrected.z - a.z) * nz;
+      const push = Math.max(0, support + 0.001 - separation);
+      corrected.x += nx * push;
+      corrected.z += nz * push;
+    }
+  }
+  return null;
+}
+
 /** Small fixed substeps prevent a fast vehicle from tunnelling through a wall. */
 export function updateGame(
   state: TruckState,
   input: DriveInput,
   elapsed: number,
   walls: WallSegment[],
+  forward?: CoursePoint,
 ): TruckState {
   let next = { ...state, collided: false };
   let remaining = Math.max(
@@ -129,8 +187,19 @@ export function updateGame(
         Math.max(speed, next.speed + VEHICLE.creepAcceleration * dt),
       );
     speed = Math.max(0, Math.min(VEHICLE.maxSpeed, speed));
+    // Gameplay assistance: while touching a wall, the wheel can turn a nearly
+    // stopped truck under throttle. Braking still holds the vehicle stationary.
+    const headingAgainstCourse = forward
+      ? Math.sin(next.yaw) * forward.x + Math.cos(next.yaw) * forward.z < 0
+      : false;
+    const turningSpeed =
+      (state.collided || next.collided || headingAgainstCourse) &&
+      throttle > 0 &&
+      brake === 0
+        ? Math.max(speed, 2)
+        : speed;
     const yaw =
-      next.yaw + ((next.steering * speed) / VEHICLE.minTurnRadius) * dt;
+      next.yaw + ((next.steering * turningSpeed) / VEHICLE.minTurnRadius) * dt;
     const candidate = {
       ...next,
       yaw,
@@ -138,12 +207,40 @@ export function updateGame(
       x: next.x + Math.sin(yaw) * speed * dt,
       z: next.z + Math.cos(yaw) * speed * dt,
     };
-    if (hitsWall(candidate, walls)) {
-      next.speed = 0;
-      next.collided = true;
-      break;
+    candidate.wrongWay = forward
+      ? Math.sin(yaw) * forward.x + Math.cos(yaw) * forward.z < -1e-8
+      : false;
+    if (candidate.wrongWay) {
+      candidate.x = next.x;
+      candidate.z = next.z;
+      candidate.speed = 0;
     }
-    candidate.distance += speed * dt;
+    if (hitsWall(candidate, walls)) {
+      const recovered = recoverWallContact(next, candidate, walls, dt);
+      if (recovered) {
+        const backwards =
+          forward &&
+          (recovered.x - next.x) * forward.x +
+            (recovered.z - next.z) * forward.z <
+            -1e-8;
+        if (!backwards) next = recovered;
+        else {
+          const rotationOnly = {
+            ...recovered,
+            x: next.x,
+            z: next.z,
+            speed: 0,
+            distance: next.distance,
+          };
+          next = hitsWall(rotationOnly, walls)
+            ? { ...next, speed: 0, collided: true }
+            : rotationOnly;
+        }
+      } else next = { ...next, speed: 0, collided: true };
+      continue;
+    }
+    candidate.collided = next.collided;
+    candidate.distance += candidate.speed * dt;
     next = candidate;
   }
   // 計算が壊れても（NaN・無限大）位置を飛ばさず、その場で止める（#22）

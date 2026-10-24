@@ -52,6 +52,7 @@ export function GameCanvas({
   const [status, setStatus] = useState<DrivingStatus>({
     position: course.points[0],
     droppedCargo: [],
+    wrongWay: false,
     speed: 0,
     distance: 0,
     collided: false,
@@ -159,11 +160,13 @@ export function GameCanvas({
             message={
               status.finished
                 ? '配送完了！'
-                : status.collided
-                  ? '壁に接触 — RでSTARTへ'
-                  : status.active
-                    ? '走行中'
-                    : '画面をクリックして操作'
+                : status.wrongWay
+                  ? '逆走防止中 — ハンドル＋アクセルで向きを戻してください'
+                  : status.collided
+                    ? '壁に接触 — ハンドルを切ってアクセルで復帰'
+                    : status.active
+                      ? '走行中'
+                      : '画面をクリックして操作'
             }
           />
           <details className="drive-help">

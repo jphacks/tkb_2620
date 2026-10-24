@@ -12,7 +12,13 @@ import {
   CARGO_GROUND_Y,
   cargoDropLocations,
 } from './fallCargo';
-import { createLapTrack, startLap, updateLap, type LapState } from './lap';
+import {
+  locate,
+  createLapTrack,
+  startLap,
+  updateLap,
+  type LapState,
+} from './lap';
 import {
   initialTruckState,
   updateGame,
@@ -23,6 +29,7 @@ import {
 import { isFiniteTruckState, sanitizeDriveInput } from './safety';
 export type DrivingStatus = {
   position: { x: number; z: number };
+  wrongWay: boolean;
   droppedCargo: { id: number; x: number; z: number }[];
   speed: number;
   distance: number;
@@ -260,6 +267,11 @@ export function createScene(
       while (physicsTime + 1e-10 >= CARGO_PHYSICS.step) {
         physicsTime -= CARGO_PHYSICS.step;
         const before = state;
+        const segment = locate(lapTrack, state, lap.segment).segment;
+        const a = lapTrack.points[segment],
+          b = lapTrack.points[(segment + 1) % lapTrack.points.length];
+        const length = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+        const forward = { x: (b.x - a.x) / length, z: (b.z - a.z) / length };
         state = updateGame(
           state,
           {
@@ -272,6 +284,7 @@ export function createScene(
           },
           CARGO_PHYSICS.step,
           walls,
+          forward,
         );
         cargo = slideCargo(cargo, {
           speed: (before.speed + state.speed) / 2,
@@ -302,6 +315,7 @@ export function createScene(
       reportedFinished = lap.finished;
       onStatus({
         position: { x: state.x, z: state.z },
+        wrongWay: state.wrongWay ?? false,
         droppedCargo: cargoDropLocations(cargo),
         cargoRemaining: remainingCargo(cargo),
         cargoTotal: cargo.length,
