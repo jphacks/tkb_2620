@@ -5,6 +5,7 @@ import {
   resamplePhotoContour,
 } from '../image-processing/resampleContour';
 import type { ResamplingOptions } from '../image-processing/resampleContour';
+import { correctSharpCurves } from '../image-processing/correctCurves';
 import {
   smoothClosedContour,
   DEFAULT_SMOOTHING,
@@ -67,6 +68,14 @@ export default function CapturePage({ captured, onConfirm }: Props) {
       };
     }
   }, [photo, smoothed, resampling]);
+  const curveCorrection = useMemo(() => {
+    if (!resampled.result) return null;
+    try {
+      return correctSharpCurves(resampled.result);
+    } catch {
+      return null;
+    }
+  }, [resampled]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const generation = useRef(0);
@@ -251,6 +260,7 @@ export default function CapturePage({ captured, onConfirm }: Props) {
                       : undefined,
                   smoothingOptions: { ...smoothing },
                   resampledContour: resampled.result ?? undefined,
+                  curveCorrection: curveCorrection ?? undefined,
                   resamplingOptions: { ...resampling },
                 })
               }
