@@ -1,5 +1,6 @@
+import { closeSmallMaskGaps } from '../image-processing/cleanPersonMask';
 import { FilesetResolver, ImageSegmenter } from '@mediapipe/tasks-vision';
-import { extractPersonOutline } from '../image-processing/extractContour';
+import { extractOuterContour } from '../image-processing/extractContour';
 import { isFullBody } from './capture';
 import type { CapturedPerson } from './capture';
 
@@ -12,7 +13,7 @@ export async function analyzePhoto(
   const segmenter = await ImageSegmenter.createFromOptions(files, {
     baseOptions: {
       modelAssetPath:
-        'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/1/selfie_segmenter.tflite',
+        'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/1/selfie_multiclass_256x256.tflite',
     },
     runningMode: 'IMAGE',
     outputConfidenceMasks: true,
@@ -27,26 +28,43 @@ export async function analyzePhoto(
     try {
       const result = segmenter.segment(bitmap);
       let outline;
+      let binaryMask;
       try {
         const mask = result.confidenceMasks?.[0];
-        outline = mask
-          ? extractPersonOutline(
-              mask.getAsFloat32Array(),
-              mask.width,
-              mask.height,
-            )
-          : null;
+        if (!mask) throw new Error('人物マスクを取得できませんでした。');
+        // Multiclass index 0 is background. Union of hair, skin, face, clothes and accessories.
+        const foreground = Uint8Array.from(
+          mask.getAsFloat32Array(),
+          (background) =>
+            Number.isFinite(background) && 1 - background >= 0.4 ? 1 : 0,
+        );
+        const data = closeSmallMaskGaps(foreground, mask.width, mask.height);
+        binaryMask = { data, width: mask.width, height: mask.height };
+        const pixels = extractOuterContour(data, mask.width, mask.height);
+        const points = pixels.map((p) => ({
+          x: p.x / mask.width,
+          y: p.y / mask.height,
+        }));
+        outline = {
+          points,
+          touchesEdge: points.some(
+            (p) => p.x === 0 || p.x === 1 || p.y === 0 || p.y === 1,
+          ),
+        };
+      } catch (cause) {
+        return {
+          ...photo,
+          outline: undefined,
+          binaryMask,
+          bodyStatus: 'unknown',
+          recognitionMessage:
+            cause instanceof Error
+              ? cause.message
+              : '輪郭が不正です。別の写真を選んでください。',
+        };
       } finally {
         result.close();
       }
-      if (!outline)
-        return {
-          ...photo,
-          bodyStatus: 'unknown',
-          outline: undefined,
-          recognitionMessage:
-            '身体の縁を見つけられませんでした。背景と身体の違いが分かりやすい写真を選ぶか、もう一度判定してください。',
-        };
       // Pose only labels the optional full-body badge; it never blocks a usable silhouette.
       let full = false;
       if (!outline.touchesEdge) {
@@ -65,6 +83,7 @@ export async function analyzePhoto(
       return {
         ...photo,
         outline,
+        binaryMask,
         bodyStatus: full ? 'full_body' : 'clipped',
         recognitionMessage: outline.touchesEdge
           ? '写真の端に沿って直線で閉じました。黄色い線がコースの輪郭イメージです。'

@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import {
+  smoothPreviewContour,
+  previewContourPath,
+} from '../image-processing/previewContour';
+import { ContourInspection } from '../components/ContourInspection';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CapturedPerson } from '../capture/capture';
 import { readPhoto } from '../capture/capture';
 
@@ -9,6 +14,13 @@ type Props = {
 
 export default function CapturePage({ captured, onConfirm }: Props) {
   const [photo, setPhoto] = useState<CapturedPerson | null>(captured);
+  const displayOutline = useMemo(
+    () =>
+      photo?.outline
+        ? smoothPreviewContour(photo.outline.points, photo.width, photo.height)
+        : [],
+    [photo],
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const generation = useRef(0);
@@ -90,7 +102,7 @@ export default function CapturePage({ captured, onConfirm }: Props) {
                   aria-label="認識した身体の輪郭。見切れた部分は写真の端に沿って閉じています。"
                 >
                   <path
-                    d={`${photo.outline.points.map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' ')} Z`}
+                    d={previewContourPath(displayOutline)}
                     vectorEffect="non-scaling-stroke"
                   />
                 </svg>
@@ -188,6 +200,7 @@ export default function CapturePage({ captured, onConfirm }: Props) {
           写真を選択しました。画像と輪郭を保持しました。黄色い線がコースの形のイメージです。実際の道路への変換は次のステップで追加します。
         </p>
       )}
+      <ContourInspection photo={photo} />
       <p className="capture-note">
         写真はブラウザ内で処理し、サーバーには送信しません。黄色い線は推定した身体の外周です。内側の穴や、離れた小さな領域は含めません。写真はひとりで写ったものを選んでください。初回の認識にはインターネット接続が必要です。HEIC形式を読み込めない場合はJPEGに変換してください。
       </p>

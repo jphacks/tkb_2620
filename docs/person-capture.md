@@ -17,9 +17,9 @@
 
 ## 認識
 
-MediaPipe Image SegmenterのSelfie SegmenterをIMAGEモードで実行し、人物の領域を取り出す。
+MediaPipe Image SegmenterのSelfie MulticlassをIMAGEモードで実行し、人物の領域を取り出す。
 推論は長辺最大512px、表示と次の処理への写真は最大2048pxで保持する。
-確率0.5以上の最大の4近傍連結領域から外周を抽出し、黄色いSVG線を写真に重ねる。
+背景以外の合計確率0.4以上を二値化し、小さな隙間を閉じた後の最大の4近傍連結領域から外周を抽出し、黄色いSVG線を写真に重ねる。
 離れたノイズと内側の穴はルートに含めない。見切れた領域は画像端に沿う直線で閉じる。
 写真が表示上縮小・余白付きになっても、線を画像の矩形に合わせる。
 全身・上半身・見切れを問わず輪郭が得られれば写真を確定できる。
@@ -31,7 +31,7 @@ Pose Landmarker Liteは補助的な「全身○」ラベルにのみ使用する
 全身の補助判定が成立しない輪郭も `clipped` として使えるが、実際の見切れの有無は `outline.touchesEdge` で区別する。
 形の平滑化・始点と方向の統一・道路として走れる寸法への変換は後続の処理で行う。
 
-ランタイムはjsDelivrの固定バージョン1.1.1、モデルはGoogle StorageのSelfie Segmenter float16 v1とPose Landmarker Lite float16 v1から取得する。
+ランタイムはjsDelivrの固定バージョン1.1.1、モデルはGoogle StorageのSelfie Multiclass float32 v1とPose Landmarker Lite float16 v1から取得する。
 写真はブラウザ内で処理し、サーバーへの送信・DB保存はしない。
 モデルによって手先や衣服の一部を取りこぼしたり背景を含める可能性がある。
 ひとりの写真を使う。複数人が接している場合の分離や、身体の手動補正は未対応。
