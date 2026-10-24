@@ -153,6 +153,19 @@ export default function CapturePage({ captured, onConfirm }: Props) {
                   />
                 </svg>
               )}
+              {photo.outline && !busy && displayOutline[0] && (
+                <span
+                  className="start-marker"
+                  style={{
+                    left: `${displayOutline[0].x * 100}%`,
+                    top: `${displayOutline[0].y * 100}%`,
+                  }}
+                  role="img"
+                  aria-label="START地点"
+                >
+                  <span>START</span>
+                </span>
+              )}
             </div>
             <span className="capture-badge">
               {busy

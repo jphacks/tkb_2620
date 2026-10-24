@@ -112,3 +112,10 @@ cloudflared tunnel --url http://localhost:5173
 ```
 
 表示された `https://〜.trycloudflare.com` をPCで開くと、QRもそのURLで作られます。URLは起動のたびに変わり、知っている人は誰でも開けるので、使い終わったら `Ctrl + C` で止めてください。
+
+## Issue #7 START地点の自動決定
+
+写真から取り出した元の輪郭で、最も上の点（同じ高さなら最も右）をSTARTにし、`points[0]` になるよう点列を回転します。
+抽出した輪郭は画面上で時計回りなので、同時に反時計回り（上→左→下→右）へそろえます。ゲームの周回方向と同じです。
+輪郭を作った直後にそろえるため、平滑化・等間隔化・色の取得（`t`）もすべてSTARTから同じ向きに並びます。写真画面ではSTARTを赤い点で表示します。
+処理は `src/image-processing/normalizeContour.ts` の `orderFromStart`。点が3つ未満・面積がない・不正な座標の輪郭はエラーにします。

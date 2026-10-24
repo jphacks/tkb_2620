@@ -21,6 +21,11 @@ import {
   extractOuterContour,
   validateContour,
 } from '../src/image-processing/extractContour.ts';
+import {
+  findStartIndex,
+  orderFromStart,
+  signedImageArea,
+} from '../src/image-processing/normalizeContour.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
@@ -568,4 +573,113 @@ test('color sampling remains in bounds when the person touches every photo edge'
     result.probes.every((p) => p.x >= 0 && p.x < 40 && p.y >= 0 && p.y < 40),
   );
   assert.equal(result.colorSamples.length, 16);
+});
+
+test('START is the topmost point, and the rightmost one when tied (#7)', () => {
+  // 画像座標なので「最も上」は y が最小
+  const points = [
+    { x: 0.2, y: 0.5 },
+    { x: 0.4, y: 0.1 },
+    { x: 0.6, y: 0.1 },
+    { x: 0.8, y: 0.5 },
+    { x: 0.5, y: 0.9 },
+  ];
+  assert.equal(findStartIndex(points), 2);
+  assert.equal(
+    findStartIndex([
+      { x: 0, y: 0.3 },
+      { x: 1, y: 0.2 },
+    ]),
+    1,
+  );
+});
+
+test('orderFromStart makes the loop counterclockwise on screen and puts START first (#7)', () => {
+  // 画面上で時計回り（上辺を右へ）。抽出された輪郭と同じ向き
+  const clockwise = [
+    { x: 0.2, y: 0.2, id: 'a' },
+    { x: 0.8, y: 0.2, id: 'b' },
+    { x: 0.8, y: 0.8, id: 'c' },
+    { x: 0.2, y: 0.8, id: 'd' },
+  ];
+  const copy = structuredClone(clockwise);
+  const ordered = orderFromStart(clockwise);
+  assert.deepEqual(
+    ordered.map((p) => p.id),
+    ['b', 'a', 'd', 'c'],
+    '右上から始まり、左（上→左→下→右）へ進む',
+  );
+  assert.ok(signedImageArea(ordered) < 0);
+  assert.deepEqual(clockwise, copy, '入力は変更しない');
+  // すでに反時計回りなら、回転だけ
+  const again = orderFromStart([...ordered.slice(2), ...ordered.slice(0, 2)]);
+  assert.deepEqual(again, ordered);
+});
+
+test('orderFromStart rejects loops whose START or direction cannot be decided (#7)', () => {
+  assert.throws(() =>
+    orderFromStart([
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+    ]),
+  );
+  assert.throws(() =>
+    orderFromStart([
+      { x: 0, y: 0 },
+      { x: 1, y: 1 },
+      { x: 2, y: 2 },
+    ]),
+  );
+  assert.throws(() =>
+    orderFromStart([
+      { x: 0, y: 0 },
+      { x: Number.NaN, y: 1 },
+      { x: 1, y: 1 },
+    ]),
+  );
+});
+
+test('a traced silhouette starts at the top-right of the head and stays first through smoothing and resampling (#7)', () => {
+  const width = 12,
+    height = 16,
+    mask = new Uint8Array(width * height);
+  const fill = (x0: number, y0: number, x1: number, y1: number) => {
+    for (let y = y0; y < y1; y++)
+      for (let x = x0; x < x1; x++) mask[y * width + x] = 1;
+  };
+  fill(4, 2, 8, 6); // 頭（上辺は y=2、x=4〜8）
+  fill(2, 6, 10, 11); // 胴と腕
+  fill(3, 11, 5, 15); // 左脚
+  fill(7, 11, 9, 15); // 右脚
+  const outline = orderFromStart(
+    extractOuterContour(mask, width, height).map((p) => ({
+      x: p.x / width,
+      y: p.y / height,
+    })),
+  );
+  assert.deepEqual(outline[0], { x: 8 / width, y: 2 / height });
+  assert.ok(signedImageArea(outline) < 0, '反時計回り');
+  assert.ok(outline[1].x < outline[0].x, 'STARTから左へ進む');
+  const smoothed = smoothClosedContour(
+    outline,
+    width,
+    height,
+    DEFAULT_SMOOTHING,
+  );
+  const start = findStartIndex(smoothed.points);
+  assert.ok(
+    start === 0 ||
+      Math.abs(smoothed.points[start].y - smoothed.points[0].y) < 0.02,
+    '平滑化後も先頭が最上部にある',
+  );
+  const resampled = resamplePhotoContour(smoothed.points, width, height, {
+    spacing: 0.05,
+    metersPerPixel: 0.05,
+  });
+  assert.equal(resampled.points[0].t, 0);
+  assert.ok(
+    Math.abs(resampled.points[0].x - smoothed.points[0].x * width * 0.05) <
+      1e-9,
+  );
+  assert.ok(signedImageArea(resampled.points) < 0, '等間隔化後も反時計回り');
 });
