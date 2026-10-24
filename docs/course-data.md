@@ -30,5 +30,13 @@
 | roadWidth      | road_width       |
 | captureMode    | capture_mode     |
 
-名前を対応させるだけで座標・幅を再変換しない。DBアクセスとマイグレーションは未実装。
-`sampleCourse.ts` はデータ形状の確認用。寸法・幅3はサンプル限りの値。周回方向は反時計回りに統一する。
+名前を対応させるだけで座標・幅を再変換しない。
+
+テーブル・関数・権限は `supabase/migrations/20261024000000_courses_rankings.sql`（#23 #24）。SupabaseのSQL Editorに貼って実行する（再実行しても壊れない）。
+
+- `courses`：上の列に加え `id`・`name`（20文字まで）・`status`（`active`/`archived`）・`play_count`・`created_at`・`last_played_at`。Memory Score（#30）は `last_played_at` から必要なときに計算し、保存しない。
+- `rankings`：`course_id`・`display_name`（12文字まで）・`score`（0〜100）・`clear_time_ms`・`remaining_cargo`・`created_at`。コースごとにTOP3だけ残す。
+- ブラウザ（anonキー）からできるのは、公開中のコースとランキングを読む・コースを保存する・`record_play(course_id)`（遊び始め）・`submit_ranking(...)`（ゴール。TOP3なら順位、圏外ならnull）だけ。書き換え・削除・ランキングの直接登録はRLSと権限で拒否する。
+- `archive_stale_courses(days)`（#32）は管理者（service_role）専用。最後に遊ばれてから指定日数たった公開中のコースを `archived` にし、一覧・ランキングから外す（データは消さない）。
+- スコアはブラウザで計算して送るため、改ざんは防げない（ハッカソン用の割り切り）。
+  `sampleCourse.ts` はデータ形状の確認用。寸法・幅3はサンプル限りの値。周回方向は反時計回りに統一する。
