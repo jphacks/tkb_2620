@@ -3,6 +3,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { CourseData } from '../../shared/course';
 import { createRoad } from './createRoad';
 import { createTruck } from './createTruck';
+import { VEHICLE } from './constants';
+import { createLapTrack, startLap, updateLap, type LapState } from './lap';
 import {
   initialTruckState,
   updateGame,
@@ -15,6 +17,9 @@ export type DrivingStatus = {
   distance: number;
   collided: boolean;
   active: boolean;
+  /** 走り出してからの時間（秒）。ゴールで止まる（#19） */
+  time: number;
+  finished: boolean;
 };
 
 export function createScene(
@@ -30,6 +35,22 @@ export function createScene(
     for (const side of [0, 1])
       walls.push({ a: edges[i][side], b: edges[(i + 1) % edges.length][side] });
   let state = initialTruckState(course);
+  // 周回とゴールの判定（#19）
+  const lapTrack = createLapTrack(course.points, course.roadWidth);
+  let lap: LapState,
+    raceTime = 0,
+    started = false;
+  /** トラックの中心と先端（ゴールは先端がSTARTラインを越えたとき） */
+  function truckPoints() {
+    const half = VEHICLE.length / 2;
+    return {
+      center: { x: state.x, z: state.z },
+      front: {
+        x: state.x + Math.sin(state.yaw) * half,
+        z: state.z + Math.cos(state.yaw) * half,
+      },
+    };
+  }
   if (hitsWall(state, walls))
     throw new Error('START周辺にトラックを配置する幅がありません。');
   const scene = new THREE.Scene();
@@ -152,6 +173,10 @@ export function createScene(
   }
   function resetTruck() {
     state = initialTruckState(course);
+    const { center, front } = truckPoints();
+    lap = startLap(lapTrack, center, front);
+    raceTime = 0;
+    started = false;
     clearInput();
     syncTruck();
     if (following) follow(0, true);
@@ -170,6 +195,7 @@ export function createScene(
   resetTruck();
   let previous = performance.now(),
     lastStatus = 0,
+    reportedFinished = false,
     collisionUntil = 0,
     frame = 0;
   function tick(now: number) {
@@ -178,7 +204,8 @@ export function createScene(
     previous = now;
     // スマホの入力はPCの画面にフォーカスがなくても効く
     const remote = getRemoteInput();
-    if (!document.hidden && (active || remote)) {
+    // ゴールしたら「もう一度」まで止める
+    if (!document.hidden && !lap.finished && (active || remote)) {
       const keyboard: DriveInput = active
         ? {
             throttle: Number(keys.has('ArrowUp') || keys.has('KeyW')),
@@ -204,16 +231,29 @@ export function createScene(
         walls,
       );
       if (state.collided) collisionUntil = now + 650;
+      // タイマーは動き出した瞬間から。画面が隠れている間は進まない
+      if (state.speed > 0) started = true;
+      if (started) raceTime += elapsed;
+      const { center, front } = truckPoints();
+      lap = updateLap(lapTrack, lap, center, front);
+      if (lap.finished) {
+        state = { ...state, speed: 0 };
+        clearInput();
+      }
     }
     syncTruck();
     if (following) follow(elapsed);
     renderer.render(scene, camera);
-    if (now - lastStatus > 100) {
+    // ゴールした瞬間はすぐ知らせる。それ以外は0.1秒ごと
+    if (now - lastStatus > 100 || lap.finished !== reportedFinished) {
+      reportedFinished = lap.finished;
       onStatus({
         speed: state.speed,
         distance: state.distance,
         collided: now < collisionUntil,
         active: active || remote !== null,
+        time: raceTime,
+        finished: lap.finished,
       });
       lastStatus = now;
     }

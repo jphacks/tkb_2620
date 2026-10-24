@@ -956,3 +956,32 @@ button:disabled {
 .course-tuning button {
   justify-self: start;
 }
+
+/* ゴール（#19） */
+.goal-overlay {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 20px 32px;
+  border-radius: 18px;
+  background: #fffffff2;
+  box-shadow: 0 8px 30px #0003;
+  text-align: center;
+}
+.goal-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #294b37;
+}
+.goal-time {
+  margin: 0 0 8px;
+  font-size: 40px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
