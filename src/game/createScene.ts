@@ -5,6 +5,7 @@ import { createRoad } from './createRoad';
 import { createTruck } from './createTruck';
 import { createCargo } from './createCargo';
 import { createCargoLayout, remainingCargo } from './cargo';
+import { introCameraProgress } from './introCamera';
 import { VEHICLE } from './constants';
 import { slideCargo, CARGO_PHYSICS } from './slideCargo';
 import {
@@ -28,6 +29,7 @@ import {
 } from './updateGame';
 import { isFiniteTruckState, sanitizeDriveInput } from './safety';
 export type DrivingStatus = {
+  introducing: boolean;
   position: { x: number; z: number };
   wrongWay: boolean;
   droppedCargo: { id: number; x: number; z: number }[];
@@ -117,6 +119,14 @@ export function createScene(
     active = false,
     disposed = false;
   const lookAt = new THREE.Vector3();
+  const introFrom = new THREE.Vector3();
+  let introducing = false,
+    introElapsed = 0;
+  function skipIntro() {
+    introducing = false;
+    clearInput();
+    if (following) follow(0, true);
+  }
   function clearInput() {
     keys.clear();
     active = false;
@@ -142,6 +152,7 @@ export function createScene(
     )
       return;
     event.preventDefault();
+    if (introducing) return;
     active = true;
     if (event.code === 'KeyR') {
       if (!event.repeat) resetTruck();
@@ -193,6 +204,7 @@ export function createScene(
     controls.update();
   }
   function setFollowing(value: boolean) {
+    introducing = false;
     following = value;
     controls.enabled = !value;
     clearInput();
@@ -200,6 +212,7 @@ export function createScene(
     else overview();
   }
   function resetTruck() {
+    introducing = false;
     state = initialTruckState(course);
     // STARTに戻したら積み直す
     physicsTime = 0;
@@ -220,11 +233,22 @@ export function createScene(
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     if (!following) overview();
+    else if (introducing) {
+      overview();
+      introFrom.copy(camera.position);
+    }
   }
   const observer = new ResizeObserver(resize);
   observer.observe(container);
   resize();
   resetTruck();
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    introducing = true;
+    overview();
+    introFrom.copy(camera.position);
+    lookAt.copy(center);
+    camera.lookAt(lookAt);
+  }
   let previous = performance.now(),
     lastStatus = 0,
     reportedFinished = false,
@@ -247,6 +271,7 @@ export function createScene(
     // ゴールしたら「もう一度」まで止める
     // スタート前は、キーボードの操作か、スマホ2台がそろうまで動かさない
     if (
+      !introducing &&
       !paused &&
       !document.hidden &&
       !lap.finished &&
@@ -308,12 +333,38 @@ export function createScene(
     } else physicsTime = 0;
     cargoView.sync(cargo);
     syncTruck();
-    if (following) follow(elapsed);
+    if (introducing) {
+      // Hidden tabs do not consume the opening shot or start driving off-screen.
+      if (!document.hidden) introElapsed += elapsed;
+      const { weight, done } = introCameraProgress(introElapsed);
+      const forward = new THREE.Vector3(
+        Math.sin(state.yaw),
+        0,
+        Math.cos(state.yaw),
+      );
+      const destination = new THREE.Vector3(
+        state.x,
+        3.2,
+        state.z,
+      ).addScaledVector(forward, -5);
+      const target = new THREE.Vector3(state.x, 0.8, state.z).addScaledVector(
+        forward,
+        2.5,
+      );
+      camera.position.lerpVectors(introFrom, destination, weight);
+      lookAt.lerpVectors(center, target, weight);
+      camera.lookAt(lookAt);
+      if (done) {
+        introducing = false;
+        clearInput();
+      }
+    } else if (following) follow(elapsed);
     renderer.render(scene, camera);
     // ゴールした瞬間はすぐ知らせる。それ以外は0.1秒ごと
     if (now - lastStatus > 100 || lap.finished !== reportedFinished) {
       reportedFinished = lap.finished;
       onStatus({
+        introducing,
         position: { x: state.x, z: state.z },
         wrongWay: state.wrongWay ?? false,
         droppedCargo: cargoDropLocations(cargo),
@@ -323,7 +374,9 @@ export function createScene(
         distance: state.distance,
         collided: now < collisionUntil,
         active:
-          !paused && (active || remote !== null || (started && !lap.finished)),
+          !introducing &&
+          !paused &&
+          (active || remote !== null || (started && !lap.finished)),
         time: raceTime,
         finished: lap.finished,
       });
@@ -334,6 +387,7 @@ export function createScene(
   frame = requestAnimationFrame(tick);
   return {
     setFollowing,
+    skipIntro,
     resetTruck,
     dispose() {
       disposed = true;
