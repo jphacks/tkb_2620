@@ -1852,3 +1852,107 @@ button:disabled {
   gap: 12px 20px;
   margin-top: 28px;
 }
+
+/* 思い出のコース：縦長の荷札カードを並べる（#26 #31）。
+   一覧は思い出度の高い順なので、左上が一番よく思い出されているコース。
+   左から右へ、行が埋まったら次の行へ並ぶ */
+.memories .saved-courses {
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.memories .saved-courses-note {
+  margin-bottom: 20px;
+}
+.memories .saved-course-list {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 22px;
+}
+.memories .saved-course {
+  position: relative;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto 1fr auto;
+  align-items: start;
+  gap: 12px;
+  padding: 30px 16px 16px;
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  border-radius: 6px 6px 10px 10px;
+  box-shadow: 5px 5px 0 var(--shadow-ink);
+}
+/* 荷札の穴 */
+.memories .saved-course::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border: 2px solid var(--paper-line);
+  border-radius: 50%;
+  background: var(--paper);
+}
+.memories .saved-course > .course-thumbnail {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  max-width: 100%;
+  border-radius: 4px;
+}
+.memories .saved-course-body {
+  gap: 6px;
+}
+.memories .saved-course-name {
+  font-size: 17px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.memories .saved-course > button {
+  grid-column: 1;
+  width: 100%;
+  align-self: end;
+}
+/* 細い荷札なので、TOP3 は「順位・名前・点」の下に「タイム・荷物」を折り返す */
+.memories .ranking-table.compact li {
+  grid-template-columns: 2.4em 1fr auto;
+  row-gap: 0;
+}
+.memories .ranking-table.compact .ranking-time {
+  grid-column: 2;
+  color: var(--muted);
+}
+.memories .ranking-table.compact .ranking-cargo {
+  grid-column: 3;
+  color: var(--muted);
+}
+/* 一番よく思い出されているコースには「いちばんの思い出」の印 */
+.memories .saved-course:first-child:not(.sample)::after {
+  content: 'いちばんの思い出';
+  position: absolute;
+  top: -12px;
+  right: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--course-accent);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+@media (max-width: 520px) {
+  .memories .saved-course-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 12px;
+  }
+  .memories .saved-course {
+    padding: 26px 10px 12px;
+    gap: 8px;
+  }
+  .memories .saved-course-name {
+    font-size: 15px;
+  }
+  .memories .saved-course > button {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+}
