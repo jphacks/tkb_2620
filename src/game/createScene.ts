@@ -52,7 +52,11 @@ export function createScene(
   ground.position.set(center.x, -0.06, center.z);
   scene.add(ground);
   const camera = new THREE.PerspectiveCamera(50, 1, 0.05, radius * 30);
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  // Photo courses are much larger than the sample; keep road and ground apart at a distance.
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    logarithmicDepthBuffer: true,
+  });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.domElement.setAttribute('aria-label', 'トラック走行画面');
   container.append(renderer.domElement);

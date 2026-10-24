@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CourseData } from '../../shared/course';
 import type { CapturedPerson } from '../capture/capture';
-import { generateCourse } from '../image-processing/generateCourse';
+import { buildCourse } from '../image-processing/generateCourse';
 
 /** Shown at least this long so the generating animation reads as a step, not a flicker. */
 const MIN_GENERATING_MS = 1600;
@@ -16,6 +16,7 @@ type Props = {
 
 export default function CourseReadyPage({ captured, onPlay, onRetake }: Props) {
   const [course, setCourse] = useState<CourseData | null>(null);
+  const [warning, setWarning] = useState('');
   const [error, setError] = useState('');
   const [name, setName] = useState('');
   useEffect(() => {
@@ -25,9 +26,12 @@ export default function CourseReadyPage({ captured, onPlay, onRetake }: Props) {
     // Let the generating screen paint before the work starts.
     const timer = window.setTimeout(() => {
       let result: CourseData | null = null,
-        message = '';
+        message = '',
+        note = '';
       try {
-        result = generateCourse(captured);
+        const built = buildCourse(captured);
+        result = built.course;
+        note = built.warning ?? '';
       } catch (cause) {
         message =
           cause instanceof Error ? cause.message : 'コースを作れませんでした。';
@@ -40,6 +44,7 @@ export default function CourseReadyPage({ captured, onPlay, onRetake }: Props) {
         if (cancelled) return;
         setCourse(result);
         setError(message);
+        setWarning(note);
       }, wait);
     }, 50);
     return () => {
@@ -101,7 +106,7 @@ export default function CourseReadyPage({ captured, onPlay, onRetake }: Props) {
         {course.roadWidth.toFixed(1)}m ・{' '}
         {course.captureMode === 'full_body' ? '全身' : '上半身・見切れ'}
       </p>
-      {captured.curveCorrection?.warning && (
+      {warning && (
         <p className="course-note">
           曲がりきれない急カーブが残っています。ゆっくり走ってください。
         </p>

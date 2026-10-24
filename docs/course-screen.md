@@ -13,14 +13,24 @@
 
 ## CourseData の作り方（`src/image-processing/generateCourse.ts`）
 
-- 点：色を割り当てた補正後コース（Issue #9 の `courseColors.points`、START が先頭）。色がなければ補正後コース（Issue #6）。
-- 座標：写真上のメートル（右が+x・下が+y）を、ゲーム空間（右が+X・画面の上が−Z）へ x→x・y→z で対応させ、中心を原点に移す。向きは変えないので START から反時計回りのまま。
-- 大きさ：いちばん長い辺が `courseSize`（初期値140）になるよう拡大・縮小する。写真の倍率（1px=0.05m）は仮の値で、そのままだと人物が20m程度になり、道幅6の道路同士が重なってトラックを置けないため。拡大するとカーブの半径も同じ割合で大きくなる。
-- 壁の色：`courseColors.wallColorStops`。色がなければ灰色1色。
-- テーマ色：壁で最も長く続く色。
-- 道幅：6.0（サンプルコースと同じ）。`captureMode`：全身判定なら `full_body`、それ以外は `clipped`。
+1. 座標：補正後コース（Issue #6、写真上のメートル・右が+x・下が+y）を、ゲーム空間（右が+X・画面の上が−Z）へ x→x・y→z で対応させ、中心を原点に移す。
+2. 大きさ：いちばん長い辺が `courseSize`（初期値140）になるよう拡大・縮小する。写真の倍率（1px=0.05m）は仮の値で、そのままだと人物が20m程度になり、道幅6の道路同士が重なってトラックを置けないため。
+3. 一本道に整える（`fitRoad`）：指や指の間のすき間など、道幅より細かい形があると、行きと帰りの道路やすき間の両側の道路が重なる。そこでコースを1マス=1の格子に塗り、
+   - 膨張（`grow`=6、道幅1本分）：細い部分を太らせ、細いすき間を埋める。出っ張った角（手先・足先）も半径6で丸くなる。
+   - 閉じる（膨張→収縮、`concaveRadius`=10）：へこんだ角と残ったすき間を半径10以上に丸める。
+   - 最も大きい領域の外周を取り直し、平滑化・道幅の半分の間隔で等間隔化し、半径6（トラックの最小回転半径）未満のカーブを補正する（最大移動2）。
+   - 出っ張りを削る処理はしない。細い腕や手先が短くなり、人型に見えなくなるため。
+   - 結果、離れた部分どうしの道路は道幅の1.5倍以上離れ、腕・脚・頭の形は残る（道路は元の輪郭より道幅1本分外側を通る）。
+4. 色・START・向き：整えた形に、元輪郭の代表色（Issue #8 の `colorExtraction`）を Issue #9 の `mapCourseColors` で対応づけ直す。元輪郭の START（Issue #7）に最も近い点が先頭になり、反時計回りにそろう。色がなければ灰色1色で、START・向きだけそろえる。
+5. 壁の色は `wallColorStops`、テーマ色は壁で最も長く続く色。道幅は6.0（サンプルコースと同じ）。`captureMode` は全身判定なら `full_body`、それ以外は `clipped`。
+
+半径6未満のカーブが残った場合は、完成画面に「ゆっくり走ってください」と出す。
+
+## 描画
+
+写真のコースはサンプルコースより大きく、全体表示でカメラが遠くなると道路と地面が重なってちらつく（Zファイティング）。`createScene` の描画に `logarithmicDepthBuffer` を使い、遠くでも奥行きの精度を保つ。
 
 コース名は CourseData に含めず、画面の状態として持つ。保存（Issue #25）で DB の列に対応させる。
 大きさ・道幅の調整は Issue #27 で行う。
 
-確認：`npm run test:course` / `npm run test:colors` / `npm run test:curves` / `npm run test:capture` / `npm run lint` / `npm run format:check` / `npm run build`。
+確認：`npm run test:course`（手の形の指・すき間、細い腕を含む） / `npm run test:colors` / `npm run test:curves` / `npm run test:capture` / `npm run lint` / `npm run format:check` / `npm run build`。
