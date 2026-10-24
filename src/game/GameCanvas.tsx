@@ -1,3 +1,4 @@
+import { DELIVERY_RATIO } from './deliveryDestination';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { socket } from '../socket/client';
 import type { CourseData } from '../../shared/course';
@@ -159,7 +160,7 @@ export function GameCanvas({
       resultRef.current = {
         courseName: info.current.courseName,
         time: next.time,
-        courseLength: info.current.courseLength,
+        courseLength: info.current.courseLength * DELIVERY_RATIO,
         cargoRemaining: next.cargoRemaining,
         cargoTotal: next.cargoTotal,
         finishedAt: Date.now(),
@@ -384,7 +385,7 @@ export function GameCanvas({
         }
       />
       <p className="course-caption">
-        反時計回りのコースです。Rでリセット。右下のミニマップで現在位置を確認できます。
+        反時計回りに走り、赤い屋根のお家へ配送します。Rでリセット。右下のミニマップで届け先を確認できます。
       </p>
     </div>
   );

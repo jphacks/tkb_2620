@@ -30,7 +30,7 @@ export default function ResultPage({
         <p className="eyebrow">RESULT</p>
         <h1>走行結果</h1>
         <p>
-          まだ結果がありません。「ゲーム」でコースを一周すると、ここに配送伝票が届きます。
+          まだ結果がありません。「ゲーム」で届け先まで走ると、ここに配送伝票が届きます。
         </p>
       </section>
     );

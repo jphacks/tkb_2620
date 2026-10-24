@@ -5,6 +5,7 @@
  * 一周分のほぼ全部が貯まった状態で、トラックの先端がSTARTラインを前向きに
  * 越えたときだけゴールにする。STARTラインの行き来や逆走ではゴールにならない。
  */
+import { deliveryDestination } from './deliveryDestination.ts';
 import type { CoursePoint } from '../../shared/course';
 
 export type LapTrack = {
@@ -93,8 +94,13 @@ export function locate(track: LapTrack, p: CoursePoint, around?: number) {
 }
 
 /** STARTラインに対する前後位置（前が正）と横ずれ */
-function relativeToStart(track: LapTrack, p: CoursePoint) {
-  const [a, b] = track.points;
+function relativeToStart(track: LapTrack, p: CoursePoint, goalRatio = 1) {
+  const goal =
+    goalRatio < 1 ? deliveryDestination(track.points, goalRatio) : null;
+  const a = goal ?? track.points[0];
+  const b = goal
+    ? { x: goal.x + goal.dx, z: goal.z + goal.dz }
+    : track.points[1];
   const len = Math.hypot(b.x - a.x, b.z - a.z) || 1;
   const dx = (b.x - a.x) / len,
     dz = (b.z - a.z) / len;
@@ -107,13 +113,14 @@ export function startLap(
   track: LapTrack,
   center: CoursePoint,
   front: CoursePoint,
+  goalRatio = 1,
 ): LapState {
   const hit = locate(track, center);
   return {
     segment: hit.segment,
     position: hit.position,
     progress: 0,
-    frontAlong: relativeToStart(track, front).along,
+    frontAlong: relativeToStart(track, front, goalRatio).along,
     finished: false,
   };
 }
@@ -124,6 +131,7 @@ export function updateLap(
   state: LapState,
   center: CoursePoint,
   front: CoursePoint,
+  goalRatio = 1,
 ): LapState {
   if (state.finished) return state;
   const hit = locate(track, center, state.segment);
@@ -132,7 +140,7 @@ export function updateLap(
   if (delta > track.length / 2) delta -= track.length;
   if (delta < -track.length / 2) delta += track.length;
   const progress = state.progress + delta;
-  const start = relativeToStart(track, front);
+  const start = relativeToStart(track, front, goalRatio);
   const crossedForward =
     state.frontAlong < 0 &&
     start.along >= 0 &&
@@ -142,7 +150,9 @@ export function updateLap(
     position: hit.position,
     progress,
     frontAlong: start.along,
-    finished: crossedForward && progress >= track.length * REQUIRED_LAP_RATIO,
+    finished:
+      crossedForward &&
+      progress >= track.length * goalRatio * REQUIRED_LAP_RATIO,
   };
 }
 

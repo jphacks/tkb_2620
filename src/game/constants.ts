@@ -1,7 +1,8 @@
 /** Provisional game-space values. Cargo and bed sizes follow this truck (see cargo.ts, #15). */
+export const TRUCK_SCALE = 1.1;
 export const VEHICLE = {
-  width: 1.2,
-  length: 2.4,
+  width: 1.2 * TRUCK_SCALE,
+  length: 2.4 * TRUCK_SCALE,
   /** 全開で最終的に届く最高速。空気抵抗はこれに合わせて決まる */
   maxSpeed: 40,
   /** 低速でのアクセル全開の加速（タイヤの限界） */

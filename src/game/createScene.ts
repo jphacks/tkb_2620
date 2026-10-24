@@ -1,3 +1,5 @@
+import { DELIVERY_RATIO } from './deliveryDestination';
+import { createDeliveryHouse } from './deliveryHouse';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { CourseData } from '../../shared/course';
@@ -5,7 +7,11 @@ import { createRoad } from './createRoad';
 import { createTruck } from './createTruck';
 import { createCargo } from './createCargo';
 import { createCargoLayout, remainingCargo } from './cargo';
-import { introCameraProgress } from './introCamera';
+import {
+  createDepot,
+  departurePose,
+  DEPARTURE_SECONDS,
+} from './depotDeparture';
 import { VEHICLE } from './constants';
 import { slideCargo, CARGO_PHYSICS } from './slideCargo';
 import {
@@ -55,11 +61,13 @@ export function createScene(
   /** true の間はトラックを止め、タイムも進めない（スマホの通信切断など、#22） */
   isPaused: () => boolean = () => false,
 ) {
-  const { group, edges } = createRoad(course);
+  const { group, edges, setGateAngle, entranceConnections } =
+    createRoad(course);
   const walls: WallSegment[] = [];
   for (let i = 0; i < edges.length; i++)
     for (const side of [0, 1])
       walls.push({ a: edges[i][side], b: edges[(i + 1) % edges.length][side] });
+  walls.push(...entranceConnections);
   let state = initialTruckState(course);
   // 周回とゴールの判定（#19）
   const lapTrack = createLapTrack(course.points, course.roadWidth);
@@ -82,10 +90,18 @@ export function createScene(
     throw new Error('START周辺にトラックを配置する幅がありません。');
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#dce8e4');
+  scene.add(createDeliveryHouse(course));
   scene.add(group, new THREE.HemisphereLight(0xffffff, 0x647356, 2.5));
   const light = new THREE.DirectionalLight(0xffffff, 2);
   light.position.set(20, 40, 20);
   scene.add(light);
+  const startPose = initialTruckState(course);
+  const depot = createDepot();
+  // Mirror local X so it is on the driver's right rather than Three.js local +X.
+  depot.group.scale.x = -1;
+  depot.group.rotation.y = startPose.yaw;
+  depot.group.position.set(startPose.x, 0, startPose.z);
+  scene.add(depot.group);
   const truck = createTruck();
   scene.add(truck.group);
   // 荷物はトラックの子：荷台ローカル座標で管理し、トラックと一緒に動く（#15）
@@ -173,9 +189,32 @@ export function createScene(
   container.addEventListener('blur', clearInput);
   window.addEventListener('blur', clearInput);
   document.addEventListener('visibilitychange', visibility);
+  function departureWorld(seconds: number) {
+    const pose = departurePose(seconds);
+    const forward = new THREE.Vector3(
+      Math.sin(startPose.yaw),
+      0,
+      Math.cos(startPose.yaw),
+    );
+    const right = new THREE.Vector3(
+      -Math.cos(startPose.yaw),
+      0,
+      Math.sin(startPose.yaw),
+    );
+    const position = new THREE.Vector3(startPose.x, 0, startPose.z)
+      .addScaledVector(right, pose.x)
+      .addScaledVector(forward, pose.z);
+    return { position, yaw: startPose.yaw - pose.angle, forward, right };
+  }
   function syncTruck() {
-    truck.group.position.set(state.x, 0, state.z);
-    truck.group.rotation.y = state.yaw;
+    if (introducing) {
+      const pose = departureWorld(introElapsed);
+      truck.group.position.copy(pose.position);
+      truck.group.rotation.y = pose.yaw;
+    } else {
+      truck.group.position.set(state.x, 0, state.z);
+      truck.group.rotation.y = state.yaw;
+    }
   }
   function follow(dt: number, snap = false) {
     const forward = new THREE.Vector3(
@@ -222,7 +261,7 @@ export function createScene(
     cargo = createCargoLayout();
     cargoView.sync(cargo);
     const { center, front } = truckPoints();
-    lap = startLap(lapTrack, center, front);
+    lap = startLap(lapTrack, center, front, DELIVERY_RATIO);
     raceTime = 0;
     started = false;
     clearInput();
@@ -252,6 +291,7 @@ export function createScene(
     lookAt.copy(center);
     camera.lookAt(lookAt);
   }
+  let gateAngle = introducing ? Math.PI / 2 : 0;
   let previous = performance.now(),
     lastStatus = 0,
     reportedFinished = false,
@@ -345,40 +385,70 @@ export function createScene(
       if (state.speed > 0) started = true;
       if (started) raceTime += elapsed;
       const { center, front } = truckPoints();
-      lap = updateLap(lapTrack, lap, center, front);
+      lap = updateLap(lapTrack, lap, center, front, DELIVERY_RATIO);
       if (lap.finished) {
         state = { ...state, speed: 0 };
         clearInput();
       }
     } else physicsTime = 0;
     cargoView.sync(cargo);
+    const signalOn =
+      introducing &&
+      introElapsed >= 2.6 &&
+      introElapsed < 5.8 &&
+      Math.floor((introElapsed - 2.6) / 0.38) % 2 === 0;
+    truck.setRightIndicator(signalOn);
     syncTruck();
     if (introducing) {
       // Hidden tabs do not consume the opening shot or start driving off-screen.
       if (!document.hidden) introElapsed += elapsed;
-      const { weight, done } = introCameraProgress(introElapsed);
+      const pose = departureWorld(introElapsed);
+      const blend = (value: number) => {
+        const t = Math.max(0, Math.min(1, value));
+        return t * t * (3 - 2 * t);
+      };
+      const approach = blend((introElapsed - 0.4) / 1.6);
+      const behind = blend((introElapsed - 3) / 3);
       const forward = new THREE.Vector3(
-        Math.sin(state.yaw),
+        Math.sin(pose.yaw),
         0,
-        Math.cos(state.yaw),
+        Math.cos(pose.yaw),
       );
-      const destination = new THREE.Vector3(
-        state.x,
-        3.2,
-        state.z,
-      ).addScaledVector(forward, -5);
-      const target = new THREE.Vector3(state.x, 0.8, state.z).addScaledVector(
-        forward,
-        2.5,
+      // Driver's front-left: see the cab and the garage opening together.
+      const left = new THREE.Vector3(
+        Math.cos(pose.yaw),
+        0,
+        -Math.sin(pose.yaw),
       );
-      camera.position.lerpVectors(introFrom, destination, weight);
-      lookAt.lerpVectors(center, target, weight);
+      const sideView = pose.position
+        .clone()
+        .addScaledVector(left, 5)
+        .addScaledVector(forward, 3.5)
+        .setY(3);
+      const rearView = pose.position
+        .clone()
+        .addScaledVector(forward, -5)
+        .setY(3.2);
+      const destination = sideView.lerp(rearView, behind);
+      const target = pose.position
+        .clone()
+        .setY(0.8)
+        .addScaledVector(forward, 2.5 * behind);
+      camera.position.lerpVectors(introFrom, destination, approach);
+      lookAt.lerpVectors(center, target, approach);
       camera.lookAt(lookAt);
-      if (done) {
+      syncTruck();
+      if (introElapsed >= DEPARTURE_SECONDS) {
         introducing = false;
         clearInput();
+        syncTruck();
       }
     } else if (following) follow(elapsed);
+    // Keep fully raised while the truck passes, then gently lower after arrival.
+    gateAngle = introducing
+      ? Math.PI / 2
+      : Math.max(0, gateAngle - (elapsed * Math.PI) / 2);
+    setGateAngle(gateAngle);
     renderer.render(scene, camera);
     // ゴールした瞬間はすぐ知らせる。それ以外は0.1秒ごと
     if (now - lastStatus > 100 || lap.finished !== reportedFinished) {
@@ -430,6 +500,7 @@ export function createScene(
           materials.forEach((m) => m.dispose());
         }
       });
+      depot.texture.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     },
