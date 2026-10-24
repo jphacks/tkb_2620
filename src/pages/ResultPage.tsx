@@ -1,4 +1,5 @@
 import { Button } from '../components/Button';
+import { RankingEntryForm } from '../components/RankingEntryForm';
 import { formatTime } from '../game/lap';
 import {
   CARGO_POINTS,
@@ -88,6 +89,8 @@ export default function ResultPage({
           {!score.cargoTracked && '（積荷は準備中のため満点）'}
         </p>
       </article>
+      {/* 同じ結果で二重に登録しないよう、結果ごとに作り直す */}
+      <RankingEntryForm key={result.finishedAt} result={result} />
       {onRetry && <Button onClick={onRetry}>もう一度走る</Button>}
     </section>
   );

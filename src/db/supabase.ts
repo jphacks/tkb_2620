@@ -8,8 +8,12 @@
 import type { CourseData } from '../../shared/course';
 import {
   fromRow,
+  groupTopRankings,
+  normalizeDisplayName,
   toInsertRow,
   type CourseRow,
+  type RankingEntry,
+  type RankingRow,
   type SavedCourse,
 } from './courseRow';
 
@@ -86,5 +90,41 @@ export async function recordPlay(id: string): Promise<void> {
   await request<null>('rpc/record_play', {
     method: 'POST',
     body: JSON.stringify({ p_course_id: id }),
+  });
+}
+
+/** いくつかのコースのTOP3をまとめて読む（#29）。コースの id → 上位3件 */
+export async function listTopRankings(
+  courseIds: readonly string[],
+): Promise<Map<string, RankingEntry[]>> {
+  if (!courseIds.length) return new Map();
+  const ids = courseIds.map(encodeURIComponent).join(',');
+  const rows = await request<RankingRow[]>(
+    `rankings?select=course_id,display_name,score,clear_time_ms,remaining_cargo,cargo_total,created_at&course_id=in.(${ids})&order=score.desc,clear_time_ms.asc,created_at.asc&limit=${courseIds.length * 3}`,
+  );
+  return groupTopRankings(rows ?? []);
+}
+
+/** ゴールの記録を登録する（#29）。TOP3 に入れば順位（1〜3）、入らなければ null */
+export async function submitRanking(entry: {
+  courseId: string;
+  displayName: string;
+  score: number;
+  clearTimeMs: number;
+  remainingCargo: number;
+  cargoTotal: number;
+}): Promise<number | null> {
+  const name = normalizeDisplayName(entry.displayName);
+  if (!name) throw new Error('名前を入れてください。');
+  return request<number | null>('rpc/submit_ranking', {
+    method: 'POST',
+    body: JSON.stringify({
+      p_course_id: entry.courseId,
+      p_display_name: name,
+      p_score: Math.round(entry.score),
+      p_clear_time_ms: Math.max(1, Math.round(entry.clearTimeMs)),
+      p_remaining_cargo: entry.remainingCargo,
+      p_cargo_total: entry.cargoTotal,
+    }),
   });
 }

@@ -1312,36 +1312,130 @@ button:disabled {
   }
 }
 
-/* 保存したコース（#25） */
+/* 思い出のコース（#25 #28〜#31） */
+.saved-courses-note {
+  margin: 0 0 12px;
+  font-size: 12px;
+  opacity: 0.75;
+}
 .saved-course-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 8px;
+  gap: 4px;
 }
-.saved-course-list li {
+.saved-course {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 4px 12px;
-  padding: 10px 0;
+  gap: 12px;
+  padding: 12px 0;
   border-bottom: 1px solid #27382f1f;
 }
-.saved-course-swatch {
-  grid-row: span 2;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
+.course-thumbnail {
+  display: block;
+  border-radius: 10px;
+  background: #f1eee4;
+}
+.saved-course-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
 .saved-course-name {
+  margin: 0;
   font-weight: 700;
 }
-.saved-course-list small {
-  grid-column: 2;
+.saved-course-body small {
+  opacity: 0.75;
+}
+/* 思い出度で色あせる（#30）。--fade：0 遊んだばかり 〜 1 忘れられる直前。よく見ると気づく程度にする */
+.saved-course > .course-thumbnail,
+.saved-course-body {
+  opacity: calc(1 - var(--fade, 0) * 0.4);
+  filter: saturate(calc(1 - var(--fade, 0) * 0.6));
+  transition:
+    opacity 0.6s,
+    filter 0.6s;
+}
+.saved-course-tag {
+  display: inline-block;
+  white-space: nowrap;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #e6e2d6;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+@media (max-width: 520px) {
+  .saved-course {
+    grid-template-columns: auto 1fr;
+  }
+  .saved-course > button {
+    grid-column: 1 / -1;
+  }
+}
+
+/* コース別TOP3（#29） */
+.ranking-table {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.ranking-table li {
+  display: grid;
+  grid-template-columns: 2.6em 1fr auto auto auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+.ranking-table.compact {
+  font-size: 12px;
+}
+.ranking-table.compact li {
+  gap: 8px;
+  padding: 0 4px;
+}
+.ranking-table li.mine {
+  background: #efa74733;
+  font-weight: 700;
+}
+.ranking-place {
+  font-weight: 700;
+}
+.ranking-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ranking-empty,
+.ranking-note {
+  margin: 4px 0 0;
+  font-size: 12px;
   opacity: 0.7;
 }
-.saved-course-list button {
-  grid-row: 1 / span 2;
-  grid-column: 3;
+.ranking-form,
+.ranking-result {
+  width: min(100%, 460px);
+  box-sizing: border-box;
+  display: grid;
+  gap: 10px;
+}
+.ranking-form h2,
+.ranking-result h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.ranking-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
 }

@@ -12,6 +12,7 @@ import type { ControllerRole } from '../shared/socket';
 import type { CourseData } from '../shared/course';
 import CourseReadyPage from './pages/CourseReadyPage';
 import { isDatabaseConfigured, recordPlay, saveCourse } from './db/supabase';
+import { SAMPLE_COURSE_ID } from './db/courseRow';
 import HomePage from './pages/HomePage';
 import CapturePage from './pages/CapturePage';
 import GamePage from './pages/GamePage';
@@ -192,7 +193,11 @@ export default function App() {
               roomSlot={<RoomPanel connected={connected} room={room} />}
               getRemoteInput={getRemoteInput}
               onFinish={(finished) => {
-                setResult(finished);
+                // ランキング用にコースの id を付ける（#29）。写真なしならサンプルの id
+                setResult({
+                  ...finished,
+                  courseId: course ? course.id : SAMPLE_COURSE_ID,
+                });
                 goTo(RESULT_PAGE);
               }}
               pausedReason={usedRoles.size ? pausedReason : null}
