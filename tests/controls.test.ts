@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   pitchAngle,
+  smoothAngle,
+  SMOOTHING_SECONDS,
   toPedal,
   toSteering,
   upVector,
@@ -76,4 +78,17 @@ test('values from the network are clamped, and non-numbers become 0 (#14)', () =
   assert.equal(sanitizeUnit(Number.NaN), 0);
   assert.equal(sanitizeUnit('1'), 0);
   assert.equal(sanitizeUnit(undefined), 0);
+});
+
+test('smoothing follows the tilt gradually and takes the short way around ±180° (#14)', () => {
+  const tau = SMOOTHING_SECONDS;
+  close(smoothAngle(0, 10, tau), 10 * (1 - Math.exp(-1)));
+  assert.equal(smoothAngle(5, 30, 0), 5, '時間が進まなければ動かない');
+  assert.ok(smoothAngle(0, 10, 0.4) > 9.8, '大きく傾ければすぐ追いつく');
+  const across = smoothAngle(170, -170, tau);
+  assert.ok(across > 170 || across < -170, '0°側を通らず、近い向きに回る');
+  let angle = 0;
+  for (let i = 0; i < 60; i++)
+    angle = smoothAngle(angle, i % 2 ? 3 : -3, 1 / 60);
+  assert.ok(Math.abs(angle) < 1, '細かい揺れは小さくなる');
 });

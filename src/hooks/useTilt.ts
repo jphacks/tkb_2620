@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   pitchAngle,
+  smoothAngle,
   toPedal,
   toSteering,
   upVector,
@@ -55,20 +56,31 @@ export function useTilt(mode: TiltMode) {
     stop();
     base.current = null;
     let received = false;
+    let smoothed: number | null = null,
+      lastTime = 0,
+      frame = 0;
     const onOrientation = (event: DeviceOrientationEvent) => {
       if (event.beta === null || event.gamma === null) return;
       received = true;
       const up = upVector(event.beta, event.gamma);
-      const angle = mode === 'steering' ? wheelAngle(up) : pitchAngle(up);
-      setFlat(angle === null);
-      if (angle === null) return; // 寝かせているとハンドルの角度が決まらない
-      if (base.current === null) base.current = angle;
-      const next =
+      const raw = mode === 'steering' ? wheelAngle(up) : pitchAngle(up);
+      setFlat(raw === null);
+      if (raw === null) return; // 寝かせているとハンドルの角度が決まらない
+      // センサーの細かい揺れを抑える（急な動きにはすぐ追いつく）
+      const dt = lastTime ? (event.timeStamp - lastTime) / 1000 : 0;
+      lastTime = event.timeStamp;
+      smoothed = smoothed === null ? raw : smoothAngle(smoothed, raw, dt);
+      if (base.current === null) base.current = smoothed;
+      valueRef.current =
         mode === 'steering'
-          ? { ...ZERO, steering: toSteering(angle, base.current) }
-          : { ...ZERO, ...toPedal(angle, base.current) };
-      valueRef.current = next;
-      setValue(next);
+          ? { ...ZERO, steering: toSteering(smoothed, base.current) }
+          : { ...ZERO, ...toPedal(smoothed, base.current) };
+      // 画面の更新は1フレームに1回（イベントごとに描き直すと残像のように見える）
+      if (!frame)
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          setValue(valueRef.current);
+        });
     };
     listener.current = onOrientation;
     window.addEventListener('deviceorientation', onOrientation);
@@ -91,3 +103,14 @@ export function useTilt(mode: TiltMode) {
 
   return { status, value, valueRef, flat, start, calibrate };
 }
+
+/** センサーが使えないときの短い案内（未開始・実行中は出さない） */
+export const TILT_NOTES: Record<
+  Exclude<TiltStatus, 'idle' | 'running'>,
+  string
+> = {
+  requesting: '許可を確認中…',
+  denied: '傾きが許可されませんでした。☰のボタンで操作できます',
+  insecure: '傾きはHTTPSのページでだけ使えます。☰のボタンで操作できます',
+  unsupported: '傾きを読み取れません。☰のボタンで操作できます',
+};

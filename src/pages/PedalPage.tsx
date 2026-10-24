@@ -1,12 +1,31 @@
 import { useCallback, useState } from 'react';
+import { ControllerScreen } from '../components/ControllerScreen';
 import { HoldButton } from '../components/HoldButton';
-import { TiltControls } from '../components/TiltControls';
 import { useControlSender, useScreenWakeLock } from '../hooks/useControlSender';
-import { useTilt } from '../hooks/useTilt';
+import { TILT_NOTES, useTilt } from '../hooks/useTilt';
+
+/** 踏み込み具合に応じて奥へ倒れて見えるペダル */
+function Pedal({ kind, amount }: { kind: 'brake' | 'accel'; amount: number }) {
+  return (
+    <div className={`pedal pedal-${kind}`}>
+      <div
+        className="pedal-plate"
+        style={{
+          transform: `perspective(420px) rotateX(${amount * 32}deg)`,
+          filter: `brightness(${1 - amount * 0.25})`,
+        }}
+      >
+        <span className="pedal-fill" style={{ height: `${amount * 100}%` }} />
+      </div>
+      <small>{kind === 'brake' ? 'ブレーキ' : 'アクセル'}</small>
+    </div>
+  );
+}
 
 /** アクセル・ブレーキ担当：縦向きに持ち、奥へ倒すとアクセル、手前でブレーキ（#14） */
 export default function PedalPage({
   joined,
+  statusText,
 }: {
   joined: boolean;
   statusText?: string;
@@ -26,46 +45,53 @@ export default function PedalPage({
   }, [accel, brakeHeld, valueRef]);
   useControlSender(joined, read);
   useScreenWakeLock(joined && tilt.status === 'running');
+  const running = tilt.status === 'running';
 
   return (
-    <section className="controller controller-pedal">
-      <p className="eyebrow">PEDAL</p>
-      <h1>アクセル・ブレーキ</h1>
-      <p className="controller-hint">
-        スマホを<strong>縦向き</strong>で持ち、上を
-        <strong>奥へ倒すとアクセル</strong>、
-        <strong>手前へ倒すとブレーキ</strong>です。
-      </p>
-      <div
-        className="pedal-gauge"
-        role="img"
-        aria-label={`アクセル ${Math.round(throttle * 100)}%、ブレーキ ${Math.round(brake * 100)}%`}
+    <ControllerScreen
+      className="controller-pedal"
+      label="アクセル・ブレーキ"
+      statusText={statusText}
+      note={
+        tilt.status !== 'idle' && tilt.status !== 'running'
+          ? TILT_NOTES[tilt.status]
+          : undefined
+      }
+      menu={() => (
+        <>
+          {running && (
+            <button type="button" onClick={tilt.calibrate}>
+              今の傾きをニュートラルにする
+            </button>
+          )}
+          {/* 実際の車と同じく、左がブレーキ・右がアクセル */}
+          <div className="hold-row">
+            <HoldButton className="brake" onHoldChange={setBrakeHeld}>
+              ブレーキ
+            </HoldButton>
+            <HoldButton className="accel" onHoldChange={setAccel}>
+              アクセル
+            </HoldButton>
+          </div>
+        </>
+      )}
+    >
+      <button
+        type="button"
+        className="pedals"
+        aria-label={
+          running
+            ? `アクセル ${Math.round(throttle * 100)}%、ブレーキ ${Math.round(brake * 100)}%`
+            : 'タップして傾きで操作を始める'
+        }
+        onClick={running ? undefined : tilt.start}
+        disabled={tilt.status === 'requesting'}
       >
-        {/* ボタンと同じく、左がブレーキ・右がアクセル（実際の車と同じ） */}
-        <div className="pedal-bar brake">
-          <span style={{ height: `${brake * 100}%` }} />
-          <small>ブレーキ</small>
-        </div>
-        <div className="pedal-bar accel">
-          <span style={{ height: `${throttle * 100}%` }} />
-          <small>アクセル</small>
-        </div>
-      </div>
-      <TiltControls
-        status={tilt.status}
-        flat={tilt.flat}
-        start={tilt.start}
-        calibrate={tilt.calibrate}
-        calibrateLabel="今の傾きをニュートラルにする"
-      />
-      <div className="hold-row">
-        <HoldButton className="brake" onHoldChange={setBrakeHeld}>
-          ブレーキ
-        </HoldButton>
-        <HoldButton className="accel" onHoldChange={setAccel}>
-          アクセル
-        </HoldButton>
-      </div>
-    </section>
+        <Pedal kind="brake" amount={brake} />
+        <Pedal kind="accel" amount={throttle} />
+        {!running && <span className="start-chip">タップで開始</span>}
+      </button>
+      <p className="pedal-hint">奥へ倒すとアクセル・手前でブレーキ</p>
+    </ControllerScreen>
   );
 }

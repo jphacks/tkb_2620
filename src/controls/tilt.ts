@@ -39,6 +39,24 @@ export function pitchAngle(up: Vec3): number {
   return Math.atan2(up.z, up.y) / RAD;
 }
 
+/** 平滑化の時定数（秒）。大きいほどなめらかだが遅れる。#27で調整 */
+export const SMOOTHING_SECONDS = 0.09;
+
+/**
+ * 前回の角度から今の角度へ、経過時間に応じて近づける（指数移動平均）。
+ * ±180°をまたいでも近い向きに回る。
+ */
+export function smoothAngle(
+  previous: number,
+  next: number,
+  dtSeconds: number,
+  tau = SMOOTHING_SECONDS,
+): number {
+  if (!(dtSeconds > 0)) return previous;
+  const k = 1 - Math.exp(-Math.min(dtSeconds, 0.5) / tau);
+  return wrapDegrees(previous + wrapDegrees(next - previous) * k);
+}
+
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
 
