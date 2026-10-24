@@ -27,6 +27,21 @@ export const CARGO = {
 export type CargoStatus = 'resting' | 'sliding' | 'falling' | 'lost';
 
 export type CargoItem = {
+  /** World-space flight, set once when leaving the bed. */
+  fall?: {
+    position: { x: number; y: number; z: number };
+    velocity: { x: number; y: number; z: number };
+    elapsed: number;
+    yaw: number;
+  };
+  /** Small lift above the bed when climbing a rail. */
+  lift?: number;
+  railPressure?: number;
+  climb?: {
+    from: { x: number; z: number };
+    to: { x: number; z: number };
+    elapsed: number;
+  };
   id: number;
   status: CargoStatus;
   /** Bed-local position of the box center on the bed floor. */

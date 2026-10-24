@@ -7,6 +7,7 @@ import { createCargo } from './createCargo';
 import { createCargoLayout, remainingCargo } from './cargo';
 import { VEHICLE } from './constants';
 import { slideCargo, CARGO_PHYSICS } from './slideCargo';
+import { updateCargoFalls, CARGO_GROUND_Y } from './fallCargo';
 import { createLapTrack, startLap, updateLap, type LapState } from './lap';
 import {
   initialTruckState,
@@ -84,7 +85,7 @@ export function createScene(
     new THREE.MeshStandardMaterial({ color: '#bccfa5', roughness: 1 }),
   );
   ground.rotation.x = -Math.PI / 2;
-  ground.position.set(center.x, -0.06, center.z);
+  ground.position.set(center.x, CARGO_GROUND_Y, center.z);
   scene.add(ground);
   const camera = new THREE.PerspectiveCamera(50, 1, 0.05, radius * 30);
   // Photo courses are much larger than the sample; keep road and ground apart at a distance.
@@ -271,6 +272,7 @@ export function createScene(
           acceleration: (state.speed - before.speed) / CARGO_PHYSICS.step,
           yawRate: (state.yaw - before.yaw) / CARGO_PHYSICS.step,
         });
+        cargo = updateCargoFalls(cargo, state);
       }
       // それでも状態が壊れていたらSTARTからやり直す（#22）
       if (!isFiniteTruckState(state)) resetTruck();
