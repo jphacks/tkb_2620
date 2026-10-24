@@ -50,6 +50,7 @@ export function GameCanvas({
   const [error, setError] = useState(''),
     [following, setFollowing] = useState(true);
   const [status, setStatus] = useState<DrivingStatus>({
+    introducing: false,
     position: course.points[0],
     droppedCargo: [],
     wrongWay: false,
@@ -158,15 +159,17 @@ export function GameCanvas({
             cargoTotal={status.cargoTotal}
             speed={status.speed}
             message={
-              status.finished
-                ? '配送完了！'
-                : status.wrongWay
-                  ? '逆走防止中 — ハンドル＋アクセルで向きを戻してください'
-                  : status.collided
-                    ? '壁に接触 — ハンドルを切ってアクセルで復帰'
-                    : status.active
-                      ? '走行中'
-                      : '画面をクリックして操作'
+              status.introducing
+                ? 'コースを見渡しています…'
+                : status.finished
+                  ? '配送完了！'
+                  : status.wrongWay
+                    ? '逆走防止中 — ハンドル＋アクセルで向きを戻してください'
+                    : status.collided
+                      ? '壁に接触 — ハンドルを切ってアクセルで復帰'
+                      : status.active
+                        ? '走行中'
+                        : '画面をクリックして操作'
             }
           />
           <details className="drive-help">
@@ -198,6 +201,19 @@ export function GameCanvas({
           </button>
         </div>
       </div>
+      {status.introducing && (
+        <div className="intro-camera-notice">
+          <p>この道を、ふたりで走ろう。</p>
+          <button
+            onClick={() => {
+              scene.current?.skipIntro();
+              container.current?.focus();
+            }}
+          >
+            演出をスキップ
+          </button>
+        </div>
+      )}
       {status.finished && (
         <div className="goal-overlay" role="status">
           <p className="goal-title">配送完了！</p>
