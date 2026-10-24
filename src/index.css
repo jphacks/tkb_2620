@@ -268,3 +268,27 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+.smoothing-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin: 20px 0;
+}
+.smoothing-controls label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.smoothing-controls input {
+  width: 220px;
+}
+.contour-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 600px) {
+  .contour-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,3 +1,7 @@
+import {
+  smoothClosedContour,
+  DEFAULT_SMOOTHING,
+} from '../src/image-processing/previewContour.ts';
 import { closeSmallMaskGaps } from '../src/image-processing/cleanPersonMask.ts';
 import {
   smoothPreviewContour,
@@ -277,4 +281,65 @@ test('mask closing joins small wrist cracks but preserves wider body gaps and cl
     (c) => (c === '#' ? 1 : 0),
   );
   assert.equal(closeSmallMaskGaps(separated, 8, 3)[1 * 8 + 3], 0);
+});
+
+test('smoothing defaults, zero settings and invalid parameters', () => {
+  const square = [
+    { x: 0.2, y: 0.2 },
+    { x: 0.8, y: 0.2 },
+    { x: 0.8, y: 0.8 },
+    { x: 0.2, y: 0.8 },
+  ];
+  assert.deepEqual(DEFAULT_SMOOTHING, { iterations: 3, strength: 0.4 });
+  assert.deepEqual(
+    smoothClosedContour(square, 500, 1000, { iterations: 0, strength: 0.4 })
+      .points,
+    square,
+  );
+  assert.deepEqual(
+    smoothClosedContour(square, 500, 1000, { iterations: 3, strength: 0 })
+      .points,
+    square,
+  );
+  assert.throws(
+    () =>
+      smoothClosedContour(square, 500, 1000, { iterations: 3, strength: NaN }),
+    /範囲外/,
+  );
+  assert.throws(
+    () =>
+      smoothClosedContour(square, 500, 1000, { iterations: -1, strength: 0.4 }),
+    /範囲外/,
+  );
+  assert.throws(() => smoothClosedContour(square, 0, 1000), /寸法/);
+  assert.throws(() => smoothClosedContour([], 500, 1000), /点/);
+});
+test('adjustable smoothing reduces small radial bumps without mutating the original silhouette', () => {
+  const points = Array.from({ length: 120 }, (_, i) => {
+    const a = (i / 120) * Math.PI * 2,
+      r = 0.3 + 0.008 * Math.cos(a * 24);
+    return { x: 0.5 + r * Math.cos(a), y: 0.5 + r * Math.sin(a) };
+  });
+  const original = structuredClone(points);
+  const light = smoothClosedContour(points, 1000, 1000, {
+    iterations: 1,
+    strength: 0.2,
+  });
+  const strong = smoothClosedContour(points, 1000, 1000, {
+    iterations: 8,
+    strength: 0.8,
+  });
+  const range = (ps: { x: number; y: number }[]) => {
+    const radii = ps.map((p) => Math.hypot(p.x - 0.5, p.y - 0.5));
+    return Math.max(...radii) - Math.min(...radii);
+  };
+  assert.ok(range(strong.points) < range(points));
+  assert.notDeepEqual(light.points, strong.points);
+  assert.deepEqual(points, original);
+  assert.equal(validateContour(strong.points).valid, true);
+  assert.ok(
+    strong.points.every(
+      (p) => Math.abs(Math.hypot(p.x - 0.5, p.y - 0.5) - 0.3) < 0.03,
+    ),
+  );
 });
