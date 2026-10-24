@@ -99,9 +99,9 @@ export type RankingEntry = {
 };
 
 /** ランキングの名前の上限（DB の制約に合わせる） */
-export const DISPLAY_NAME_MAX = 12;
+export const DISPLAY_NAME_MAX = 16;
 
-/** 名前の前後の空白を除き、12文字に切る。空なら空文字（登録させない） */
+/** チーム名の前後の空白を除き、16文字に切る。空なら空文字（登録させない） */
 export function normalizeDisplayName(name: string): string {
   return [...(name ?? '').trim()].slice(0, DISPLAY_NAME_MAX).join('');
 }
