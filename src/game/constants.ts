@@ -2,8 +2,8 @@
 export const VEHICLE = {
   width: 1.2,
   length: 2.4,
-  maxSpeed: 9,
-  acceleration: 3,
+  maxSpeed: 18,
+  acceleration: 6,
   brakeDeceleration: 7,
   rollingDeceleration: 0.7,
   minTurnRadius: 6,
