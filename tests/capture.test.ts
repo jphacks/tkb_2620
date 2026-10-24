@@ -1,3 +1,4 @@
+import { extractPersonOutline } from '../src/image-processing/extractContour.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
@@ -91,4 +92,72 @@ test('normalizes photo size and releases decoded image, including conversion fai
   canvas.toBlob = (callback) => callback(null);
   await assert.rejects(readPhoto(file), /準備できません/);
   assert.equal(closed, 2);
+});
+
+function outline(rows: string[]) {
+  return extractPersonOutline(
+    Float32Array.from(rows.join(''), (value) => (value === '#' ? 1 : 0)),
+    rows[0].length,
+    rows.length,
+  );
+}
+function area(points: { x: number; y: number }[]) {
+  return (
+    Math.abs(
+      points.reduce((sum, p, i) => {
+        const q = points[(i + 1) % points.length];
+        return sum + p.x * q.y - q.x * p.y;
+      }, 0),
+    ) / 2
+  );
+}
+test('clipped body closes along the bottom photo edge with a straight segment', () => {
+  const result = outline(['..##..', '.####.', '.####.', '.####.'])!;
+  assert.equal(result.touchesEdge, true);
+  const bottom = result.points.filter((p) => p.y === 1);
+  assert.deepEqual(bottom, [
+    { x: 5 / 6, y: 1 },
+    { x: 1 / 6, y: 1 },
+  ]);
+  assert.ok(
+    result.points.every((p) => p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1),
+  );
+});
+test('silhouette remains concave instead of replacing arms with a convex hull', () => {
+  const result = outline([
+    '.......',
+    '.##.##.',
+    '.##.##.',
+    '.#####.',
+    '.#####.',
+    '.......',
+  ])!;
+  assert.equal(result.touchesEdge, false);
+  assert.equal(result.points.length, 8);
+  assert.ok(result.points.some((p) => p.x === 3 / 7 && p.y === 3 / 6));
+});
+test('largest outer boundary excludes holes and detached noise', () => {
+  const result = outline([
+    '#......',
+    '..####.',
+    '..#..#.',
+    '..#..#.',
+    '..####.',
+    '.......',
+  ])!;
+  assert.equal(result.touchesEdge, false);
+  assert.equal(result.points.length, 4);
+  assert.ok(Math.abs(area(result.points) - 16 / 42) < 0.00001);
+});
+test('all four clipped edges close as the photo rectangle; empty masks produce no fake outline', () => {
+  const result = outline(['####', '####', '####'])!;
+  assert.equal(result.points.length, 4);
+  assert.equal(result.touchesEdge, true);
+  assert.equal(area(result.points), 1);
+  assert.equal(outline(['....', '....']), null);
+  assert.equal(outline(['....', '.#..', '....']), null);
+  assert.throws(
+    () => extractPersonOutline(new Float32Array(2), 3, 4),
+    /Invalid/,
+  );
 });

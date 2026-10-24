@@ -1,3 +1,4 @@
+import type { PersonOutline } from '../image-processing/extractContour';
 export type BodyStatus = 'full_body' | 'clipped' | 'unknown';
 
 /** Orientation-normalized PNG, longest edge at most 2048 pixels. Kept in memory only; never uploaded or stored. */
@@ -8,6 +9,7 @@ export type CapturedPerson = {
   bodyStatus: BodyStatus;
   capturedAt: number;
   recognitionMessage?: string;
+  outline?: PersonOutline;
 };
 
 export type PosePoint = { x: number; y: number; visibility?: number };

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CapturedPerson } from '../capture/capture';
-import { bodyGuidance, isFullBody, readPhoto } from '../capture/capture';
+import { readPhoto } from '../capture/capture';
 
 type Props = {
   captured: CapturedPerson | null;
@@ -38,40 +38,17 @@ export default function CapturePage({ captured, onConfirm }: Props) {
       if (token !== generation.current) return;
       setPhoto(selected);
       try {
-        const { createPoseDetector } = await import('../capture/poseDetector');
+        const { analyzePhoto } = await import('../capture/analyzePhoto');
         if (token !== generation.current) return;
-        const detector = await createPoseDetector();
-        try {
-          if (token !== generation.current) return;
-          const bitmap = await createImageBitmap(selected.blob);
-          try {
-            if (token !== generation.current) return;
-            const points = detector.detect(bitmap).landmarks[0] ?? [];
-            const full = isFullBody(points);
-            const result: CapturedPerson = {
-              ...selected,
-              bodyStatus: full
-                ? 'full_body'
-                : points.length
-                  ? 'clipped'
-                  : 'unknown',
-              recognitionMessage: full
-                ? '全身を認識しました。黄色い枠が目印です。'
-                : bodyGuidance(points),
-            };
-            setPhoto(result);
-          } finally {
-            bitmap.close();
-          }
-        } finally {
-          detector.close();
-        }
+        const result = await analyzePhoto(selected);
+        if (token !== generation.current) return;
+        setPhoto(result);
       } catch {
         if (token === generation.current)
           setPhoto({
             ...selected,
             recognitionMessage:
-              '全身認識を実行できませんでした。通信環境を確認して再判定するか、この写真をそのまま使えます。',
+              '身体の輪郭を読み取れませんでした。通信環境を確認して再判定するか、別の写真を選んでください。',
           });
       }
     } catch (cause) {
@@ -91,23 +68,42 @@ export default function CapturePage({ captured, onConfirm }: Props) {
       <p className="eyebrow">STEP 01 · PHOTO</p>
       <h1>写真のポーズが、道になる。</h1>
       <p>
-        携帯で撮った、ひとりの全身写真を選んでください。写真から全身を判定します。見切れた写真も使えます。
+        ひとりの人物写真を選んでください。全身でも、上半身だけでもOK。身体の縁を黄色い線で表示し、見切れた部分は写真の端に沿って直線でつなぎます。
       </p>
-      <div
-        className={`capture-frame ${photo?.bodyStatus === 'full_body' ? 'is-full-body' : ''}`}
-        aria-busy={busy}
-      >
+      <div className="capture-frame" aria-busy={busy}>
         {photo ? (
           <>
-            <img ref={image} alt="選択した人物の写真" />
+            <div
+              className="outline-photo"
+              style={{
+                aspectRatio: `${photo.width} / ${photo.height}`,
+                maxWidth: `min(100%, ${(65 * photo.width) / photo.height}vh)`,
+              }}
+            >
+              <img ref={image} alt="選択した人物の写真" />
+              {photo.outline && !busy && (
+                <svg
+                  className="person-outline"
+                  viewBox="0 0 1 1"
+                  preserveAspectRatio="none"
+                  role="img"
+                  aria-label="認識した身体の輪郭。見切れた部分は写真の端に沿って閉じています。"
+                >
+                  <path
+                    d={`${photo.outline.points.map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' ')} Z`}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </svg>
+              )}
+            </div>
             <span className="capture-badge">
               {busy
-                ? '全身を判定中…'
+                ? '身体の縁を読み取り中…'
                 : photo.bodyStatus === 'full_body'
                   ? '全身○'
-                  : photo.bodyStatus === 'clipped'
-                    ? '全身の一部を確認できません'
-                    : '全身を確認できません'}
+                  : photo.outline
+                    ? '上半身・見切れOK'
+                    : '輪郭を確認できません'}
             </span>
           </>
         ) : (
@@ -116,7 +112,7 @@ export default function CapturePage({ captured, onConfirm }: Props) {
             <p>
               {busy
                 ? '写真を読み込んでいます…'
-                : '頭から足先まで入った写真を選ぼう。'}
+                : '全身・上半身、お好きなポーズの写真を選ぼう。'}
             </p>
             <small>JPEG・PNG・WebPなど、20MBまで</small>
           </div>
@@ -125,7 +121,7 @@ export default function CapturePage({ captured, onConfirm }: Props) {
       <div role="status" aria-live="polite">
         {busy ? (
           <p>
-            写真から全身を確認しています。初回は認識モデルの読み込みに時間がかかります。
+            写真から身体の縁を読み取っています。初回は認識モデルの読み込みに時間がかかります。
           </p>
         ) : (
           photo?.recognitionMessage && <p>{photo.recognitionMessage}</p>
@@ -141,7 +137,7 @@ export default function CapturePage({ captured, onConfirm }: Props) {
         type="file"
         accept="image/*"
         hidden
-        aria-label="全身の写真を選択"
+        aria-label="人物の写真を選択"
         onChange={(event) => {
           const file = event.currentTarget.files?.[0];
           event.currentTarget.value = '';
@@ -179,6 +175,7 @@ export default function CapturePage({ captured, onConfirm }: Props) {
             </button>
             <button
               className="capture-primary"
+              disabled={!photo.outline}
               onClick={() => onConfirm(photo)}
             >
               この写真を使う
@@ -188,11 +185,11 @@ export default function CapturePage({ captured, onConfirm }: Props) {
       </div>
       {captured && !busy && (
         <p className="capture-confirmed" role="status">
-          写真を選択しました。輪郭処理へ画像と判定結果を渡す準備ができています。輪郭生成は次のステップで追加します。
+          写真を選択しました。画像と輪郭を保持しました。黄色い線がコースの形のイメージです。実際の道路への変換は次のステップで追加します。
         </p>
       )}
       <p className="capture-note">
-        写真はブラウザ内で処理し、サーバーには送信しません。全身の判定は推定です。初回の認識にはインターネット接続が必要です。HEIC形式を読み込めない場合はJPEGに変換してください。
+        写真はブラウザ内で処理し、サーバーには送信しません。黄色い線は推定した身体の外周です。内側の穴や、離れた小さな領域は含めません。写真はひとりで写ったものを選んでください。初回の認識にはインターネット接続が必要です。HEIC形式を読み込めない場合はJPEGに変換してください。
       </p>
     </section>
   );
