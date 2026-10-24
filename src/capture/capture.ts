@@ -1,3 +1,4 @@
+import type { ColorExtraction } from '../image-processing/extractColors';
 import type {
   ResampledContour,
   ResamplingOptions,
@@ -17,6 +18,7 @@ export type CapturedPerson = {
   bodyStatus: BodyStatus;
   capturedAt: number;
   recognitionMessage?: string;
+  colorExtraction?: ColorExtraction;
   outline?: PersonOutline;
   binaryMask?: BinaryPersonMask;
   smoothedOutline?: PersonOutline;
