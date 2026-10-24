@@ -625,16 +625,6 @@ button:disabled {
   border: 16px solid #294b37;
   transition: transform 60ms linear;
 }
-.wheel span {
-  position: absolute;
-  top: -16px;
-  left: 50%;
-  width: 10px;
-  height: 30px;
-  margin-left: -5px;
-  border-radius: 5px;
-  background: #efa747;
-}
 .wheel::after {
   content: '';
   position: absolute;
@@ -724,41 +714,104 @@ button:disabled {
   height: 100vw;
   width: 100dvh;
   height: 100dvw;
-  padding: 12px 20px;
-  box-sizing: border-box;
+  overflow: hidden;
   background: #f8f6ef;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
   transform: translate(-50%, -50%) rotate(90deg);
 }
 .controller-steering.flipped {
   transform: translate(-50%, -50%) rotate(-90deg);
 }
-.steering-side {
-  display: grid;
-  gap: 8px;
-  justify-items: start;
-  text-align: left;
-  flex: 1;
-  min-width: 0;
-}
-.steering-side .hold-row {
-  max-width: none;
-}
-.steering-side .hold-button {
-  padding: 12px;
-}
-.steering-status {
+.steering-label {
+  position: absolute;
+  top: 12px;
+  left: 16px;
   margin: 0;
-  font-size: 12px;
+  font-weight: 700;
+  display: grid;
 }
-.steering-flip {
-  padding: 4px 10px;
-  font-size: 12px;
+.steering-label small {
+  font-weight: 400;
+  font-size: 11px;
+  opacity: 0.75;
 }
+.steering-menu-toggle {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 20px;
+}
+/* ハンドルは画面のど真ん中 */
 .controller-steering .wheel {
-  flex: 0 0 auto;
-  width: min(42dvh, 78dvw);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(72dvw, 46dvh);
+  margin: calc(min(72dvw, 46dvh) / -2) 0 0 calc(min(72dvw, 46dvh) / -2);
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.controller-steering .wheel:disabled {
+  opacity: 0.6;
+}
+.wheel-mark {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  width: 10px;
+  height: 30px;
+  margin-left: -5px;
+  border-radius: 5px;
+  background: #efa747;
+}
+.wheel-start {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #294b37;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.steering-note {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  color: #765123;
+}
+.steering-menu {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(260px, 45%);
+  padding: 64px 14px 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: white;
+  box-shadow: -4px 0 16px #0002;
+  transform: translateX(105%);
+  transition: transform 160ms ease;
+}
+.steering-menu.open {
+  transform: none;
+}
+.steering-menu .hold-button {
+  padding: 16px 8px;
 }
