@@ -129,18 +129,23 @@ export function SavedCourses({
                         <span className="saved-course-tag">おためし便</span>
                       )}
                     </p>
-                    <small className="saved-course-meta">
+                    <dl className="saved-course-meta">
                       {!isSample && (
-                        <span>
-                          最後の配達{' '}
-                          {timeAgo(
-                            course.lastPlayedAt ?? course.createdAt,
-                            now,
-                          )}
-                        </span>
+                        <div>
+                          <dt>最後の配達</dt>
+                          <dd>
+                            {timeAgo(
+                              course.lastPlayedAt ?? course.createdAt,
+                              now,
+                            )}
+                          </dd>
+                        </div>
                       )}
-                      <span>配達 {course.playCount}回</span>
-                    </small>
+                      <div>
+                        <dt>配達回数</dt>
+                        <dd>{course.playCount}回</dd>
+                      </div>
+                    </dl>
                   </div>
                   <div className="saved-course-actions">
                     <Button

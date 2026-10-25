@@ -2451,14 +2451,27 @@ button {
   vector-effect: non-scaling-stroke;
 }
 
-/* 思い出のコースのカード：日時と回数は、それぞれ1かたまりで折り返す */
+/* 思い出のコースのカード：伝票の欄のように、項目名と値を1行ずつそろえる */
 .saved-course-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 10px;
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  font-size: 12px;
 }
-.saved-course-meta span {
+.saved-course-meta > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 2px;
+  border-bottom: 1px dashed var(--paper-line);
   white-space: nowrap;
+}
+.saved-course-meta dt {
+  color: var(--muted);
+}
+.saved-course-meta dd {
+  margin: 0;
+  font-weight: 700;
 }
 /* ランキング（ポップアップで見る）と再配達のボタン */
 .saved-course-actions {
@@ -2469,10 +2482,16 @@ button {
 .saved-course-actions > button {
   width: 100%;
 }
-/* ランキングは、再配達と同じ形のまま、白地にはんこの赤 */
+/* 同じ形の線のボタン。ランキングは黒、再配達ははんこの赤（塗りつぶしなし） */
+.saved-course-actions > button {
+  background: transparent;
+  border: 2px solid currentColor;
+  box-shadow: none;
+}
 .saved-course-actions > .saved-course-ranking {
-  background: #fff;
-  border-color: var(--stamp);
+  color: var(--ink);
+}
+.saved-course-actions > .saved-course-play {
   color: var(--stamp);
 }
 /* コース別ランキングのポップアップ：チーム名は省略せず折り返す */
