@@ -5,6 +5,7 @@ import type {
   ServerToClientEvents,
 } from '../shared/socket.js';
 import {
+  closeRoom,
   createRoom,
   getController,
   getRoomForSocket,
@@ -25,7 +26,12 @@ const httpServer = createServer((req, res) => {
     res.end();
   }
 });
+/** PCの通信が一時的に切れても、この時間内に戻ればルームとQRをそのまま使える */
+const HOST_GRACE_MS = 60_000;
+const pendingClose = new Map<string, ReturnType<typeof setTimeout>>();
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
+  // 一時的な切断なら、同じsocket IDで復帰させる（Socket.IOの接続状態の復元）
+  connectionStateRecovery: { maxDisconnectionDuration: HOST_GRACE_MS },
   cors: {
     origin: (process.env.CLIENT_ORIGIN ?? 'http://localhost:5173')
       .split(',')
@@ -33,6 +39,12 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   },
 });
 io.on('connection', (socket) => {
+  // 切れていたPCが同じIDで戻ってきたら、ルームを閉じる予定を取り消す
+  const closing = pendingClose.get(socket.id);
+  if (closing) {
+    clearTimeout(closing);
+    pendingClose.delete(socket.id);
+  }
   socket.emit('server:ready', { message: 'Bodrive server ready' });
   socket.on('connection:ping', (ack) => {
     if (typeof ack === 'function') ack();
@@ -47,6 +59,14 @@ io.on('connection', (socket) => {
     if (!result.ok) {
       socket.emit('room:error', { message: result.message });
       return;
+    }
+    if (result.replaced) {
+      // 係を引き継がれた古い端末には知らせて、ルームから外す
+      const old = io.sockets.sockets.get(result.replaced);
+      old?.emit('room:error', {
+        message: '別のスマホがこの係で参加しました',
+      });
+      old?.leave(result.state.roomId);
     }
     socket.join(result.state.roomId);
     socket.emit('room:joined', { ...result.state, role });
@@ -89,10 +109,19 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const updated = leaveRoom(socket.id);
     if (!updated) return;
-    if (updated.closed) {
-      io.to(updated.roomId).emit('room:error', {
-        message: 'PCとの接続が切れました。QRコードを読み直してください',
-      });
+    if (updated.hostLeft) {
+      const hostId = socket.id;
+      pendingClose.set(
+        hostId,
+        setTimeout(() => {
+          pendingClose.delete(hostId);
+          const closed = closeRoom(updated.roomId, hostId);
+          if (closed)
+            io.to(closed.roomId).emit('room:error', {
+              message: 'PCとの接続が切れました。QRコードを読み直してください',
+            });
+        }, HOST_GRACE_MS),
+      );
       return;
     }
     io.to(updated.roomId).emit('room:update', updated);
