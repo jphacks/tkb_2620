@@ -1,4 +1,4 @@
-# 急カーブの検出・自動補正（Issue #6）
+# 急カーブの検出・自動補正
 
 `correctSharpCurves(contour,options)` は等間隔化した閉じた輪郭（メートル、Issue #5の出力）から急カーブを見つけ、トラックが曲がれる形に補正する。
 初期値は `minTurnRadius=6.0m`・`maxCorrectionIterations=30`・`maxDisplacement=3.0m`（`DEFAULT_CURVE_CORRECTION`）。
@@ -33,6 +33,6 @@
 ## 注意
 
 半径は「1px = 何m」の倍率で大きく変わる。人物が小さい（細い腕・脚の幅が数m）と半径6mでは曲がれないため、補正しきれずに警告が出る。移動が3m以内でも細い部分はつぶれて丸い形に近づく。
-倍率・半径・移動量の調整はプレイテスト（Issue #27）で決める。
+倍率・半径・移動量の調整はプレイテスト（「ゲームバランス調整」）で決める。
 
 確認：`npm run test:curves` / `npm run test:capture` / `npm run lint` / `npm run format:check` / `npm run build`。
