@@ -2324,3 +2324,129 @@ button {
   grid-column: 3;
   grid-row: 1;
 }
+
+/* TOP3 に入ったときだけ出る、チーム名の登録（#29 #26） */
+.ranking-popup {
+  width: min(92vw, 440px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+.ranking-popup::backdrop {
+  background: #17251ea6;
+}
+.ranking-popup-sheet {
+  position: relative;
+  padding: 26px 24px 22px;
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+  box-shadow: 8px 8px 0 #0004;
+}
+.ranking-popup-sheet form {
+  display: grid;
+  gap: 14px;
+}
+.ranking-popup-sheet h2 {
+  margin: 0 0 12px;
+  font-size: 22px;
+}
+.ranking-popup-sheet form h2 {
+  margin: 0;
+}
+.ranking-popup-stamp {
+  position: absolute;
+  top: -18px;
+  right: 18px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  width: 70px;
+  height: 70px;
+  border: 4px solid var(--stamp);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--stamp);
+  font-weight: 900;
+  font-size: 18px;
+  transform: rotate(-12deg);
+}
+.ranking-popup-field {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+.ranking-popup-field input {
+  font: inherit;
+  font-size: 18px;
+  padding: 10px 12px;
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+  background: white;
+}
+.ranking-popup-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.ranking-popup .ranking-table {
+  margin-bottom: 16px;
+}
+
+/* 配送完了伝票を大きく */
+.result-page .delivery-slip {
+  width: min(100%, 640px);
+  padding: 32px 40px 28px;
+  font-size: 18px;
+}
+.result-page .slip-title {
+  font-size: 30px;
+}
+.result-page .slip-strong {
+  font-size: 34px;
+}
+.result-page .slip-score span {
+  font-size: 16px;
+}
+.result-page .slip-score strong {
+  font-size: 72px;
+}
+
+/* ルートを作っている間：円の道路をトラックが反時計回りに走る（ゲームと同じ向き） */
+.generating-road {
+  fill: none;
+  stroke: #4a5550;
+  stroke-width: 22;
+}
+.generating-lane {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-dasharray: 10 8;
+}
+.course-generating .generating-truck {
+  fill: var(--course-accent);
+  stroke: var(--ink);
+  stroke-width: 2;
+  animation-name: generating-drive-ccw;
+}
+.generating-wheel {
+  fill: var(--ink);
+}
+@keyframes generating-drive-ccw {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+/* 写真の読み込み：集荷票と同じ横幅のまっすぐな道路 */
+.capture-page .truck-road {
+  width: 100%;
+  margin: 14px 0;
+}
+/* 人型の道は拡大しても線の太さを変えない（塗りつぶしに見えないように） */
+.route-card-art-road,
+.guide-art-road {
+  vector-effect: non-scaling-stroke;
+}

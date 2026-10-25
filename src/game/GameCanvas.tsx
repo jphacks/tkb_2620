@@ -310,11 +310,6 @@ export function GameCanvas({
           )}
         </div>
       </div>
-      {status.introducing && (
-        <div className="intro-camera-notice">
-          <p>この道を、ふたりで届けよう。</p>
-        </div>
-      )}
       {status.countdown != null && (
         <div className="start-countdown" role="status" aria-live="polite">
           <span key={status.countdown}>

@@ -160,7 +160,7 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
   return (
     <section className="capture-page">
       <p className="eyebrow">新規受付 1/2</p>
-      <h1>写真をおあずかりします</h1>
+      <h1>写真をお預かりします</h1>
       {notice && (
         <p className="capture-notice" role="alert">
           {notice}

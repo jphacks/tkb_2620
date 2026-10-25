@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  entersTopRankings,
   fromRow,
   groupTopRankings,
   normalizeCourseName,
@@ -126,4 +127,18 @@ test('team names are trimmed and cut to 16 characters; blank is rejected (#29)',
   assert.equal(normalizeDisplayName('  あやか '), 'あやか');
   assert.equal(normalizeDisplayName('あ'.repeat(20)), 'あ'.repeat(16));
   assert.equal(normalizeDisplayName('   '), '');
+});
+
+test('a result enters the TOP3 only when it beats the third place (#29)', () => {
+  const top = [
+    { score: 90, clearTimeMs: 50_000 },
+    { score: 80, clearTimeMs: 60_000 },
+    { score: 70, clearTimeMs: 70_000 },
+  ];
+  assert.equal(entersTopRankings([], 1, 999_999), true);
+  assert.equal(entersTopRankings(top.slice(0, 2), 10, 999_999), true);
+  assert.equal(entersTopRankings(top, 71, 99_000), true);
+  assert.equal(entersTopRankings(top, 70, 69_000), true);
+  assert.equal(entersTopRankings(top, 70, 70_000), false);
+  assert.equal(entersTopRankings(top, 69, 10_000), false);
 });

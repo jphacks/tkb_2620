@@ -1,4 +1,3 @@
-import { TruckRoad } from '../components/TruckRoad';
 import { useEffect, useRef, useState } from 'react';
 import type { CourseData } from '../../shared/course';
 import type { CapturedPerson } from '../capture/capture';
@@ -94,7 +93,25 @@ export default function CourseReadyPage({
       <section className="course-ready" aria-busy="true">
         <p className="eyebrow">新規受付 2/2・ルート</p>
         <h1>ルートを作っています…</h1>
-        <TruckRoad target={0.92} label="写真の形から道路をつくっています" />
+        <div
+          className="course-generating"
+          role="status"
+          aria-label="写真の形から道路をつくっています"
+        >
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle className="generating-road" cx="100" cy="100" r="70" />
+            <circle className="generating-lane" cx="100" cy="100" r="70" />
+            <g className="generating-truck">
+              {/* 左向きのトラック。上から反時計回りに一周するので、いつも進む向きを向く */}
+              <g transform="translate(100 30) scale(-1 1)">
+                <rect x="-16" y="-10" width="22" height="16" rx="2" />
+                <path d="M6 -5h7l5 6v5H6z" />
+                <circle cx="-9" cy="7" r="4" className="generating-wheel" />
+                <circle cx="11" cy="7" r="4" className="generating-wheel" />
+              </g>
+            </g>
+          </svg>
+        </div>
       </section>
     );
 

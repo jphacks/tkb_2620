@@ -132,3 +132,20 @@ export function groupTopRankings(
   }
   return byCourse;
 }
+
+/**
+ * この記録が今の TOP3 に入るか（#29）。3件未満なら必ず入る。
+ * 並びは groupTopRankings と同じ：スコアが高い→タイムが短い（同点同タイムは先に出した記録が上なので入らない）。
+ */
+export function entersTopRankings(
+  top: readonly Pick<RankingEntry, 'score' | 'clearTimeMs'>[],
+  score: number,
+  clearTimeMs: number,
+): boolean {
+  if (top.length < 3) return true;
+  const third = top[2];
+  return (
+    score > third.score ||
+    (score === third.score && clearTimeMs < third.clearTimeMs)
+  );
+}

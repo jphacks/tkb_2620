@@ -39,7 +39,7 @@ export default function HomePage({
           <span className="route-card-label">新規受付</span>
           <svg
             className="route-card-art"
-            viewBox="0 0 120 90"
+            viewBox="0 0 175 90"
             aria-hidden="true"
           >
             <rect x="8" y="10" width="54" height="70" rx="5" />
@@ -47,8 +47,8 @@ export default function HomePage({
             <path d="M70 45h12m-5-5 5 5-5 5" />
             <path
               className="route-card-art-road"
-              d="M100 16c8 3 10 10 5 15s3 13 0 21-10 13-18 8-10-15-5-23 10-24 18-21Z"
-              transform="translate(8 0)"
+              d="M20 4c3.3 0 5.6 2.5 5.6 5.4 0 2.2-1.2 3.8-2.8 4.7l8.6 3.4c1.5.6 1.8 2.6.5 3.5-.8.6-1.9.6-2.7.1l-4.6-2.6.6 6.4 4.4 8.4c.7 1.4-.3 3.1-1.9 3.1-.8 0-1.6-.5-2-1.2L20 27.6l-5.7 7.6c-.4.7-1.2 1.2-2 1.2-1.6 0-2.6-1.7-1.9-3.1l4.4-8.4.6-6.4-4.6 2.6c-.8.5-1.9.5-2.7-.1-1.3-.9-1-2.9.5-3.5l8.6-3.4c-1.6-.9-2.8-2.5-2.8-4.7C14.4 6.5 16.7 4 20 4Z"
+              transform="translate(95 4) scale(2.05)"
             />
           </svg>
           <strong className="route-card-title">新しいコースで遊ぶ</strong>
@@ -74,7 +74,8 @@ export default function HomePage({
                 <circle cx="70" cy="28" r="4" />
                 <path
                   className="route-card-art-road"
-                  d="M60 44c6-4 14-2 16 4s-4 10 0 14-6 10-14 6-10-10-6-14 0-6 4-10Z"
+                  d="M20 4c3.3 0 5.6 2.5 5.6 5.4 0 2.2-1.2 3.8-2.8 4.7l8.6 3.4c1.5.6 1.8 2.6.5 3.5-.8.6-1.9.6-2.7.1l-4.6-2.6.6 6.4 4.4 8.4c.7 1.4-.3 3.1-1.9 3.1-.8 0-1.6-.5-2-1.2L20 27.6l-5.7 7.6c-.4.7-1.2 1.2-2 1.2-1.6 0-2.6-1.7-1.9-3.1l4.4-8.4.6-6.4-4.6 2.6c-.8.5-1.9.5-2.7-.1-1.3-.9-1-2.9.5-3.5l8.6-3.4c-1.6-.9-2.8-2.5-2.8-4.7C14.4 6.5 16.7 4 20 4Z"
+                  transform="translate(50 36) scale(0.95)"
                 />
               </svg>
               <strong className="route-card-title">思い出のコースで遊ぶ</strong>
