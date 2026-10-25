@@ -24,9 +24,10 @@ import type { CourseColors } from './mapCourseColors';
 
 /** Sample value shared with the fixture course; tune in Issue #27. */
 export const DEFAULT_ROAD_WIDTH = 6.0;
-/** Longest side of the course in game units. About 490 around for a standing person,
- * which a careful driver laps in under a minute at the truck's top speed of 18. */
-export const DEFAULT_COURSE_SIZE = 110;
+/** Longest side of the course in game units. Large enough that arms and legs fit the
+ * 6-wide road with only light reshaping (fitRoad), so the person's shape stays (#27).
+ * About 1100 around for a person with arms out, a lap of a minute and a half to two. */
+export const DEFAULT_COURSE_SIZE = 300;
 /** Used when no person colors are available. */
 export const DEFAULT_WALL_COLOR = '#a0a0a0';
 export const DEFAULT_THEME_COLOR = '#f2a65a';
