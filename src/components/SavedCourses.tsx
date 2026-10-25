@@ -149,7 +149,12 @@ export function SavedCourses({
                     >
                       ランキング
                     </Button>
-                    <Button onClick={() => onPlay(course)}>再配達する</Button>
+                    <Button
+                      className="saved-course-play"
+                      onClick={() => onPlay(course)}
+                    >
+                      再配達する
+                    </Button>
                   </div>
                 </li>
               );

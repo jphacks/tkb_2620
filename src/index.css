@@ -2469,11 +2469,11 @@ button {
 .saved-course-actions > button {
   width: 100%;
 }
+/* ランキングは、再配達と同じ形のまま、白地にはんこの赤 */
 .saved-course-actions > .saved-course-ranking {
-  background: transparent;
-  color: var(--ink);
-  border: 2px solid var(--paper-line);
-  box-shadow: none;
+  background: #fff;
+  border-color: var(--stamp);
+  color: var(--stamp);
 }
 /* コース別ランキングのポップアップ：チーム名は省略せず折り返す */
 .course-ranking h2 {
