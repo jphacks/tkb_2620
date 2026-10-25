@@ -1,5 +1,8 @@
 let sharedContext: AudioContext | null = null;
 export const soundSettings = { enabled: true };
+/** Overall loudness. Raised 1.5x from 0.18 (game) and 0.45 (stamp); peaks stay well below 1. */
+export const GAME_VOLUME = 0.18 * 1.5;
+export const STAMP_VOLUME = 0.45 * 1.5;
 
 /** Keep the unlocked context across the transition to the delivery slip. */
 export function playStampSound() {
@@ -25,7 +28,7 @@ export function playStampSound() {
   filter.type = 'lowpass';
   filter.frequency.value = 850;
   const gain = context.createGain();
-  gain.gain.value = 0.45;
+  gain.gain.value = STAMP_VOLUME;
   noise.connect(filter).connect(gain).connect(context.destination);
   noise.onended = () => {
     noise.disconnect();
@@ -50,7 +53,7 @@ export function feedbackEvents(
 export function createGameAudio() {
   const context = (sharedContext ??= new AudioContext());
   const master = context.createGain();
-  master.gain.value = 0.18;
+  master.gain.value = GAME_VOLUME;
   master.connect(context.destination);
   const engine = context.createOscillator();
   engine.type = 'triangle';
@@ -82,7 +85,11 @@ export function createGameAudio() {
     setEnabled(value: boolean) {
       enabled = value;
       soundSettings.enabled = value;
-      master.gain.setTargetAtTime(value ? 0.18 : 0, context.currentTime, 0.03);
+      master.gain.setTargetAtTime(
+        value ? GAME_VOLUME : 0,
+        context.currentTime,
+        0.03,
+      );
     },
     update(speed: number, running: boolean) {
       engine.frequency.setTargetAtTime(
