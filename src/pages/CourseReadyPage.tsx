@@ -138,7 +138,10 @@ export default function CourseReadyPage({
           autoComplete="off"
           onChange={(event) => setName(event.target.value)}
         />
-        <small>{MAX_COURSE_NAME_LENGTH}文字まで</small>
+        <small>
+          {MAX_COURSE_NAME_LENGTH}
+          文字まで。コース名とコースの形（シルエット）は、ほかの人の「思い出のコース」にも公開されます。写真は公開されません。
+        </small>
         <div className="capture-actions">
           <button className="capture-primary" type="submit">
             このルートで出発準備へ

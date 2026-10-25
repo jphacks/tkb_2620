@@ -2450,3 +2450,110 @@ button {
 .guide-art-road {
   vector-effect: non-scaling-stroke;
 }
+
+/* 思い出のコースのカード：伝票の欄のように、項目名と値を1行ずつそろえる */
+.saved-course-meta {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  font-size: 12px;
+}
+.saved-course-meta > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 2px;
+  border-bottom: 1px dashed var(--paper-line);
+  white-space: nowrap;
+}
+.saved-course-meta dt {
+  color: var(--muted);
+}
+.saved-course-meta dd {
+  margin: 0;
+  font-weight: 700;
+}
+/* ランキング（ポップアップで見る）と再配達のボタン */
+.saved-course-actions {
+  display: grid;
+  gap: 8px;
+  align-self: end;
+}
+.saved-course-actions > button {
+  width: 100%;
+}
+/* 同じ形の線のボタン。ランキングは黒、再配達ははんこの赤（塗りつぶしなし） */
+.saved-course-actions > button {
+  background: transparent;
+  border: 2px solid currentColor;
+  box-shadow: none;
+}
+.saved-course-actions > .saved-course-ranking {
+  color: var(--ink);
+}
+.saved-course-actions > .saved-course-play {
+  color: var(--stamp);
+}
+/* コース別ランキングのポップアップ：チーム名は省略せず折り返す */
+.course-ranking h2 {
+  padding-right: 70px;
+  overflow-wrap: anywhere;
+}
+.course-ranking .ranking-table {
+  font-size: 15px;
+  gap: 6px;
+}
+.course-ranking .ranking-table li {
+  grid-template-columns: 2.6em minmax(0, 1fr) auto;
+  grid-template-areas:
+    'place name score'
+    'place detail detail';
+  row-gap: 2px;
+  padding: 8px 10px;
+  background: #0000000a;
+}
+.course-ranking .ranking-place {
+  grid-area: place;
+}
+.course-ranking .ranking-name {
+  grid-area: name;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+.course-ranking .ranking-score {
+  grid-area: score;
+  font-weight: 800;
+}
+.course-ranking .ranking-time,
+.course-ranking .ranking-cargo {
+  grid-row: 2;
+  font-size: 13px;
+  color: var(--muted);
+}
+.course-ranking .ranking-time {
+  grid-column: 2;
+}
+.course-ranking .ranking-cargo {
+  grid-column: 3;
+  white-space: nowrap;
+}
+.ranking-popup-note {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--muted);
+}
+.memories .saved-course-actions {
+  grid-column: 1;
+}
+@media (max-width: 520px) {
+  .memories .saved-course-actions > button {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+}
+
+/* ポップアップの角に重ねた TOP3 のはんこを切らない（dialog は既定で中身をはみ出させない） */
+.ranking-popup {
+  overflow: visible;
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Button } from './Button';
 import { CourseThumbnail } from './CourseThumbnail';
 import { RankingTable } from './RankingTable';
@@ -39,6 +39,7 @@ export function SavedCourses({
   onPlay: (course: SavedCourse) => void;
 }) {
   const [state, setState] = useState<State>({ kind: 'loading' });
+  const [rankingFor, setRankingFor] = useState<SavedCourse | null>(null);
   const [reload, setReload] = useState(0);
   // 思い出度は時間で下がるので、1分ごとに描き直す
   const [now, setNow] = useState(() => Date.now());
@@ -128,18 +129,38 @@ export function SavedCourses({
                         <span className="saved-course-tag">おためし便</span>
                       )}
                     </p>
-                    <small>
-                      {isSample ? '' : '最後の配達 '}
-                      {isSample
-                        ? `配達 ${course.playCount}回`
-                        : `${timeAgo(course.lastPlayedAt ?? course.createdAt, now)} ・ 配達 ${course.playCount}回`}
-                    </small>
-                    <RankingTable
-                      entries={state.rankings.get(course.id) ?? []}
-                      compact
-                    />
+                    <dl className="saved-course-meta">
+                      {!isSample && (
+                        <div>
+                          <dt>最後の配達</dt>
+                          <dd>
+                            {timeAgo(
+                              course.lastPlayedAt ?? course.createdAt,
+                              now,
+                            )}
+                          </dd>
+                        </div>
+                      )}
+                      <div>
+                        <dt>配達回数</dt>
+                        <dd>{course.playCount}回</dd>
+                      </div>
+                    </dl>
                   </div>
-                  <Button onClick={() => onPlay(course)}>再配達する</Button>
+                  <div className="saved-course-actions">
+                    <Button
+                      className="saved-course-ranking"
+                      onClick={() => setRankingFor(course)}
+                    >
+                      ランキング
+                    </Button>
+                    <Button
+                      className="saved-course-play"
+                      onClick={() => onPlay(course)}
+                    >
+                      再配達する
+                    </Button>
+                  </div>
                 </li>
               );
             })}
@@ -147,6 +168,58 @@ export function SavedCourses({
         ) : (
           <p>まだコースがありません。</p>
         ))}
+      {rankingFor && state.kind === 'ready' && (
+        <CourseRankingDialog
+          courseName={rankingFor.name}
+          entries={state.rankings.get(rankingFor.id) ?? []}
+          onClose={() => setRankingFor(null)}
+        />
+      )}
     </div>
+  );
+}
+
+/** コースごとのTOP3を、チーム名を省略せずに見せるポップアップ */
+function CourseRankingDialog({
+  courseName,
+  entries,
+  onClose,
+}: {
+  courseName: string;
+  entries: readonly RankingEntry[];
+  onClose: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const node = dialog.current;
+    if (node && !node.open) node.showModal();
+  }, []);
+  return (
+    <dialog
+      ref={dialog}
+      className="ranking-popup course-ranking"
+      aria-labelledby="course-ranking-title"
+      onClose={onClose}
+      onClick={(event) => {
+        // 枠の外（背景）を押したら閉じる
+        if (event.target === dialog.current) dialog.current?.close();
+      }}
+    >
+      <div className="ranking-popup-sheet">
+        <p className="ranking-popup-stamp">TOP3</p>
+        <h2 id="course-ranking-title">{courseName}</h2>
+        <RankingTable entries={entries} />
+        <div className="ranking-popup-actions">
+          <span />
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => dialog.current?.close()}
+          >
+            閉じる
+          </button>
+        </div>
+      </div>
+    </dialog>
   );
 }
