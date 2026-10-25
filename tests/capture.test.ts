@@ -33,6 +33,7 @@ import {
   validatePhoto,
   readPhoto,
   isFullBody,
+  looksLikeHeic,
 } from '../src/capture/capture.ts';
 
 const pose = () =>
@@ -682,4 +683,12 @@ test('a traced silhouette starts at the top-right of the head and stays first th
       1e-9,
   );
   assert.ok(signedImageArea(resampled.points) < 0, '等間隔化後も反時計回り');
+});
+
+test('iPhoneのHEIC/HEIFは、種類か拡張子で見分ける', () => {
+  assert.equal(looksLikeHeic({ name: 'IMG_0001.HEIC', type: '' }), true);
+  assert.equal(looksLikeHeic({ name: 'photo', type: 'image/heic' }), true);
+  assert.equal(looksLikeHeic({ name: 'a.heif', type: 'image/heif' }), true);
+  assert.equal(looksLikeHeic({ name: 'a.jpg', type: 'image/jpeg' }), false);
+  assert.equal(looksLikeHeic({ name: 'a.png', type: '' }), false);
 });
