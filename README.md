@@ -7,9 +7,7 @@
 ## デモ動画・発表スライド
 
 - **[デモ動画はこちら（YouTube）](https://youtu.be/AljSOdaH4es)**
-- **[発表スライドを見る（全21枚・画像版）](docs/presentation/slides.md)**
-- [PDFを開く・ダウンロード](docs/presentation/bodrive-slides.pdf?raw=true)
-- [編集用PowerPoint](docs/presentation/bodrive-slides.pptx)
+- **[PDFを開く・ダウンロード](docs/presentation/bodrive-slides.pdf?raw=true)**
 
 スライドでは、人物写真からのコース生成、独自の積荷物理、スマホ2台の連携、プライバシー、ランキング、思い出が色あせる仕組みを図で紹介しています。PDF内の「デモ動画はこちら」からもYouTubeを開けます。
 
