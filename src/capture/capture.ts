@@ -63,15 +63,82 @@ export function validatePhoto(file: File) {
     throw new Error('画像ファイルを選んでください。');
 }
 
+const HEIC_TYPES = [
+  'image/heic',
+  'image/heif',
+  'image/heic-sequence',
+  'image/heif-sequence',
+];
+
+/** iPhoneの写真（HEIC/HEIF）か。種類が空のブラウザもあるので拡張子でも見る */
+export function looksLikeHeic(file: { name: string; type: string }): boolean {
+  return (
+    HEIC_TYPES.includes(file.type.toLowerCase()) ||
+    /\.(heic|heif)$/i.test(file.name)
+  );
+}
+
+type HeicTo = ((options: {
+  blob: Blob;
+  type: 'image/jpeg' | 'image/png';
+  quality?: number;
+}) => Promise<Blob>) & { isHeic?: (file: Blob) => Promise<boolean> };
+
+// MediaPipe と同じく、固定バージョンを jsDelivr から必要なときだけ読み込む
+const HEIC_TO_URL =
+  'https://cdn.jsdelivr.net/npm/heic-to@1.6.6/dist/iife/heic-to.js';
+let heicToLoading: Promise<HeicTo> | null = null;
+
+function loadHeicTo(): Promise<HeicTo> {
+  heicToLoading ??= new Promise<HeicTo>((resolve, reject) => {
+    const scope = window as unknown as { HeicTo?: HeicTo };
+    if (scope.HeicTo) return resolve(scope.HeicTo);
+    const script = document.createElement('script');
+    script.src = HEIC_TO_URL;
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.onload = () =>
+      scope.HeicTo
+        ? resolve(scope.HeicTo)
+        : reject(new Error('HEICの変換を準備できませんでした。'));
+    script.onerror = () =>
+      reject(new Error('HEICの変換を準備できませんでした。'));
+    document.head.append(script);
+  }).catch((error: unknown) => {
+    heicToLoading = null; // 通信に失敗したら、次に選んだときにもう一度読み込む
+    throw error;
+  });
+  return heicToLoading;
+}
+
+/**
+ * 写真を画像として読み込む。Safari は HEIC をそのまま読めるので、
+ * 読めなかった HEIC だけ JPEG に変換してから読み込む（変換もブラウザ内だけ）。
+ */
+async function decodePhoto(file: File): Promise<ImageBitmap> {
+  try {
+    return await createImageBitmap(file, { imageOrientation: 'from-image' });
+  } catch (error) {
+    if (!looksLikeHeic(file)) throw error;
+    const heicTo = await loadHeicTo();
+    const jpeg = await heicTo({
+      blob: file,
+      type: 'image/jpeg',
+      quality: 0.92,
+    });
+    return await createImageBitmap(jpeg, { imageOrientation: 'from-image' });
+  }
+}
+
 /** Decode orientation and limit the longest edge before inference. */
 export async function readPhoto(file: File): Promise<CapturedPerson> {
   validatePhoto(file);
   let bitmap: ImageBitmap;
   try {
-    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    bitmap = await decodePhoto(file);
   } catch {
     throw new Error(
-      'この写真を読み込めませんでした。JPEG・PNGなどに変換して選び直してください。',
+      'この写真を読み込めませんでした。JPEG・PNG・HEICの写真を選び直してください。',
     );
   }
   try {
