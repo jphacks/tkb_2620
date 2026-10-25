@@ -1,6 +1,7 @@
 # Bodrive 発表資料
 
-- [発表スライド（PDF）](bodrive-slides.pdf)
+- [発表スライドを見る（全21枚・画像版）](slides.md)
+- [発表スライド（PDF・ダウンロード）](bodrive-slides.pdf?raw=true)
 - [編集用PowerPoint](bodrive-slides.pptx)
 - [発表者ノート](speaker-notes.md)
 - [構成の参考資料](references.md)
@@ -23,3 +24,5 @@ GitHubへこのフォルダを送信すると、PDFへのリンクからプレ�
 [デモ動画はこちら（YouTube）](https://youtu.be/AljSOdaH4es)
 
 PDFとPowerPointの6枚目・20枚目にも同じ動画へのクリック可能なリンクがあります。
+
+GitHubのPDFプレビューでエラーになる場合は、画像版を開くか、PDFをダウンロードして閲覧してください。PDFは画質を確認して約3.2MBへ軽量化しています。動画へのリンクも保持しています。
