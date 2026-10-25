@@ -45,9 +45,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     },
   });
   if (!response.ok) {
+    // 詳しい内容は開発者向けにコンソールへ。画面にはDBの生のエラーを出さない
     const detail = await response.text().catch(() => '');
+    console.error('Supabase request failed', response.status, detail);
     throw new Error(
-      `データベースとの通信に失敗しました（${response.status}）${detail ? `: ${detail.slice(0, 200)}` : ''}`,
+      `データベースとの通信に失敗しました（${response.status}）。時間をおいて、もう一度お試しください。`,
     );
   }
   const text = await response.text();

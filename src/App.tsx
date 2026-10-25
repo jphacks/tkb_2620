@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { controllerLossReason, validateCourseData } from './game/safety';
+import { prepareAudio } from './game/feedback';
 import type { CapturedPerson } from './capture/capture';
 import { BrandMark } from './components/BrandMark';
 import { ConnectionStatus } from './components/ConnectionStatus';
@@ -228,7 +229,10 @@ export default function App() {
             <ResultPage
               result={result}
               // スマホがつながったままなら、そのままもう一度走る
-              onRetry={() => goTo(bothJoined ? 'game' : 'connect')}
+              onRetry={() => {
+                prepareAudio();
+                goTo(bothJoined ? 'game' : 'connect');
+              }}
               onHome={() => goTo('home')}
             />
           ) : active === 'connect' ? (
@@ -237,7 +241,10 @@ export default function App() {
               room={room}
               course={courseData}
               courseName={courseLabel}
-              onStart={() => goTo('game')}
+              onStart={() => {
+                prepareAudio();
+                goTo('game');
+              }}
               onBack={() => goTo(connectBack)}
             />
           ) : active === 'memories' ? (
