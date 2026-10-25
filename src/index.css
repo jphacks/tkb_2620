@@ -1102,11 +1102,11 @@ button:disabled {
   z-index: 2;
   bottom: 60px;
   right: 16px;
-  width: clamp(180px, 22vw, 280px);
-  border: 1px solid #d7dccfaa;
+  width: clamp(220px, 26vw, 340px);
+  border: 1px solid #d7dccf55;
   border-radius: 14px;
-  background: #e8eee6;
-  box-shadow: 0 3px 12px #182c2720;
+  background: #e8eee680;
+  box-shadow: 0 3px 12px #182c2710;
   pointer-events: none;
 }
 .course-minimap svg {
@@ -1153,7 +1153,7 @@ button:disabled {
 
 @media (max-width: 650px) {
   .course-minimap {
-    width: clamp(140px, 28vw, 180px);
+    width: clamp(160px, 30vw, 200px);
     right: 8px;
   }
 }
