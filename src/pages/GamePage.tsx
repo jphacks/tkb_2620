@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import type { CapturedPerson } from '../capture/capture';
 import type { CourseData } from '../../shared/course';
 import type { DriveInput } from '../game/updateGame';
@@ -8,7 +7,6 @@ import { sampleCourse } from '../fixtures/sampleCourse';
 import { validateCourseData } from '../game/safety';
 export default function GamePage({
   minimapPhoto,
-  roomSlot,
   getRemoteInput,
   course,
   courseName,
@@ -18,7 +16,6 @@ export default function GamePage({
   onLobby,
 }: {
   minimapPhoto?: CapturedPerson | null;
-  roomSlot?: ReactNode;
   getRemoteInput?: () => DriveInput | null;
   /** The course made from the photo (Issue #10); the sample course until then. */
   course?: CourseData;
@@ -50,17 +47,7 @@ export default function GamePage({
       <GameCanvas
         course={playable ?? sampleCourse}
         minimapPhoto={playable ? minimapPhoto : null}
-        toolbarExtra={
-          <>
-            {name}
-            {roomSlot && (
-              <details className="hud-connection">
-                <summary>スマホ接続・QRコード</summary>
-                {roomSlot}
-              </details>
-            )}
-          </>
-        }
+        toolbarExtra={name}
         getRemoteInput={getRemoteInput}
         // 伝票のコース名：写真から作ったコースは付けた名前（#10）
         courseName={playable ? courseName : 'サンプルコース（楕円）'}
