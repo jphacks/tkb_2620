@@ -18,7 +18,7 @@ export function CourseMinimap({
   photo?: CapturedPerson | null;
   wallColorStops: readonly WallColorStop[];
 }) {
-  const map = useMemo(() => createMinimapProjection(points, 180, 26), [points]);
+  const map = useMemo(() => createMinimapProjection(points, 240, 24), [points]);
   const segments = useMemo(() => {
     const lengths = points.map((p, i) => {
       const q = points[(i + 1) % points.length];
