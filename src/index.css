@@ -2080,3 +2080,247 @@ button {
   width: 100%;
   margin-top: 8px;
 }
+
+/* 走行画面の ☰ 配達メニュー（#26）。ふだんはボタン1つだけにして画面をすっきりさせる */
+.drive-menu {
+  position: relative;
+  pointer-events: auto;
+}
+.drive-menu-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 20px;
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  box-shadow: 3px 3px 0 var(--shadow-ink);
+}
+.drive-menu-panel {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  display: grid;
+  gap: 6px;
+  width: min(280px, 80vw);
+  padding: 10px;
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+  box-shadow: 6px 6px 0 var(--shadow-ink);
+}
+.drive-menu-panel > button {
+  width: 100%;
+  text-align: left;
+  font-weight: 700;
+}
+.drive-menu-stop {
+  color: var(--stamp);
+}
+.drive-menu-help {
+  display: grid;
+  gap: 2px;
+  margin: 4px 2px 0;
+  font-size: 12px;
+}
+.drive-menu-help dt {
+  font-weight: 800;
+  margin-top: 4px;
+}
+.drive-menu-help dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* 読み込み中：道路を右へ走るトラック（#26） */
+.truck-road {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 520px);
+  margin: 16px auto;
+}
+.truck-road-lane {
+  position: relative;
+  flex: 1;
+  height: 22px;
+  margin: 18px 34px 0 0;
+  background: #4a5550;
+  border-radius: 3px;
+  /* 真ん中の白線 */
+  background-image: linear-gradient(90deg, #fff 0 60%, transparent 60%);
+  background-size: 22px 2px;
+  background-repeat: repeat-x;
+  background-position: 0 center;
+}
+.truck-road-done {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: color-mix(in srgb, var(--course-accent) 45%, transparent);
+  border-radius: 3px 0 0 3px;
+  transition: width 0.2s linear;
+}
+.truck-road-truck {
+  position: absolute;
+  bottom: 8px;
+  width: 52px;
+  height: 32px;
+  margin-left: -26px;
+  fill: var(--course-accent);
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  transition: left 0.2s linear;
+}
+.truck-road-window {
+  fill: #dff1ff;
+}
+.truck-road-wheel {
+  fill: var(--ink);
+}
+.truck-road-goal {
+  position: absolute;
+  right: -32px;
+  bottom: 0;
+  font-size: 24px;
+  line-height: 1;
+}
+.truck-road-percent {
+  width: 3em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+@media (prefers-reduced-motion: reduce) {
+  .truck-road-truck,
+  .truck-road-done {
+    transition: none;
+  }
+}
+
+/* ホーム：大きな荷札2枚。右の列は「思い出のコース」の下に「おためし便」 */
+.home-top {
+  display: flex;
+  justify-content: flex-end;
+  margin: -24px 0 16px;
+}
+.home .route-choices {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+.route-side {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 20px;
+  min-width: 0;
+}
+.route-card-big {
+  min-height: clamp(260px, 40vh, 380px);
+  align-content: space-between;
+  justify-items: start;
+  padding: 26px 28px 26px 38px;
+}
+.route-card-big .route-card-title {
+  font-size: clamp(24px, 3vw, 34px);
+}
+.route-card-art {
+  width: min(220px, 70%);
+  height: auto;
+  justify-self: center;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.route-card-art-road {
+  stroke: var(--course-accent);
+  stroke-width: 6;
+}
+.sample-ticket {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 16px 20px;
+  background: var(--paper);
+  border: 2px dashed var(--paper-line);
+  border-radius: 6px;
+  font-weight: 700;
+  text-align: left;
+}
+.sample-ticket-label {
+  padding: 2px 10px;
+  border-radius: 4px;
+  background: var(--ink);
+  color: white;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+}
+@media (max-width: 640px) {
+  .home .route-choices {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .route-card-big {
+    min-height: 220px;
+  }
+  .home-top {
+    margin-top: -12px;
+  }
+}
+
+/* 写真：集荷票の上に写真を置く */
+.capture-slip-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: var(--ink);
+  color: white;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  border-radius: 6px 6px 0 0;
+}
+.capture-slip-head span:last-child {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+.capture-slip-head + .capture-frame {
+  border-top: 0;
+  border-radius: 0 0 6px 6px;
+}
+.capture-parcel {
+  width: 72px;
+  height: 64px;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+.capture-placeholder p {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 12px 0 4px;
+}
+.capture-note {
+  display: inline-block;
+  padding: 2px 10px;
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+}
+/* 右上は「コース名」と ☰ を横に並べる */
+.app-game .course-toolbar {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.app-game .hud-extras {
+  grid-column: 2;
+  grid-row: 1;
+}
+.app-game .drive-menu {
+  grid-column: 3;
+  grid-row: 1;
+}

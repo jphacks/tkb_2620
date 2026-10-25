@@ -1,3 +1,4 @@
+import { TruckRoad } from '../components/TruckRoad';
 import { usePhotoColors } from '../capture/usePhotoColors';
 import {
   DEFAULT_RESAMPLING,
@@ -96,6 +97,10 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
     }
   }, [photo, photoColors, curveCorrection, resampling]);
   const [busy, setBusy] = useState(false);
+  // 読み込み中のトラックの進み具合に使う段階（写真を開く → 体の形を読み取る）
+  const [stage, setStage] = useState<'reading' | 'analyzing'>('reading');
+  // 写真を選び直したら、トラックをスタートに戻す
+  const [run, setRun] = useState(0);
   const [error, setError] = useState('');
   const generation = useRef(0);
   const image = useRef<HTMLImageElement>(null);
@@ -117,12 +122,15 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
     const token = ++generation.current;
     setError('');
     setBusy(true);
+    setStage('reading');
+    setRun((n) => n + 1);
     setPhoto(null);
     onConfirm(null);
     try {
       const selected = await readPhoto(file);
       if (token !== generation.current) return;
       setPhoto(selected);
+      setStage('analyzing');
       try {
         const { analyzePhoto } = await import('../capture/analyzePhoto');
         if (token !== generation.current) return;
@@ -151,14 +159,17 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
 
   return (
     <section className="capture-page">
-      <p className="eyebrow">新規受付 1/2・写真</p>
-      <h1>写真のポーズが、道になる。</h1>
+      <p className="eyebrow">新規受付 1/2</p>
+      <h1>写真をおあずかりします</h1>
       {notice && (
         <p className="capture-notice" role="alert">
           {notice}
         </p>
       )}
-      <p>ひとりで写った写真を選んでね。上半身だけでもOK。</p>
+      <div className="capture-slip-head" aria-hidden="true">
+        <span>集荷票</span>
+        <span>人物写真 1枚</span>
+      </div>
       <div className="capture-frame" aria-busy={busy}>
         {photo ? (
           <>
@@ -210,26 +221,36 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
           </>
         ) : (
           <div className="capture-placeholder">
-            <span aria-hidden="true">◎</span>
-            <p>
-              {busy
-                ? '写真を読み込んでいます…'
-                : '全身・上半身、お好きなポーズの写真を選ぼう。'}
-            </p>
-            <small>JPEG・PNG・WebPなど、20MBまで</small>
+            <svg
+              className="capture-parcel"
+              viewBox="0 0 64 56"
+              aria-hidden="true"
+            >
+              <path d="M6 16 32 4l26 12v26L32 54 6 42z" />
+              <path d="M6 16l26 12 26-12M32 28v26M19 10l26 12" />
+            </svg>
+            <p>ひとりで写った写真をどうぞ</p>
+            <small>上半身だけでもOK・JPEG/PNG/WebP 20MBまで</small>
           </div>
         )}
       </div>
       <div role="status" aria-live="polite">
-        {busy ? (
-          <p>
-            写真から身体の縁を読み取っています。初回は認識モデルの読み込みに時間がかかります。
-          </p>
+        {busy || colors.busy ? (
+          <TruckRoad
+            key={run}
+            target={busy ? (stage === 'reading' ? 0.25 : 0.85) : 0.97}
+            label={
+              busy
+                ? stage === 'reading'
+                  ? '写真を開いています'
+                  : '体の形を読み取っています'
+                : 'コースの色を準備しています'
+            }
+          />
         ) : (
           photo?.recognitionMessage && <p>{photo.recognitionMessage}</p>
         )}
       </div>
-      {colors.busy && <p role="status">コースの色を準備しています…</p>}
       {colors.error && (
         <p className="capture-error" role="alert">
           {colors.error}

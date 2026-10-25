@@ -1,3 +1,4 @@
+import { TruckRoad } from '../components/TruckRoad';
 import { useEffect, useRef, useState } from 'react';
 import type { CourseData } from '../../shared/course';
 import type { CapturedPerson } from '../capture/capture';
@@ -92,22 +93,8 @@ export default function CourseReadyPage({
     return (
       <section className="course-ready" aria-busy="true">
         <p className="eyebrow">新規受付 2/2・ルート</p>
-        <h1>コースを作っています…</h1>
-        <div className="course-generating" role="status">
-          <svg viewBox="0 0 200 200" aria-hidden="true">
-            <circle className="generating-track" cx="100" cy="100" r="70" />
-            <g className="generating-truck">
-              {/* A small delivery truck riding on the top of the ring. */}
-              <g transform="translate(100 30)">
-                <rect x="-16" y="-9" width="22" height="16" rx="2" />
-                <path d="M6 -4h7l5 6v5H6z" />
-                <circle cx="-9" cy="8" r="4" />
-                <circle cx="11" cy="8" r="4" />
-              </g>
-            </g>
-          </svg>
-          <p>写真の形から道路をつないで、人物の色で壁を塗っています。</p>
-        </div>
+        <h1>ルートを作っています…</h1>
+        <TruckRoad target={0.92} label="写真の形から道路をつくっています" />
       </section>
     );
 
@@ -115,13 +102,8 @@ export default function CourseReadyPage({
   return (
     <section className="course-ready">
       <p className="eyebrow">新規受付 2/2・ルート</p>
-      <h1>配達ルートができた！</h1>
+      <h1>配達ルートを確認</h1>
       <CourseMap course={course} photo={mapPhoto} />
-      <p className="course-facts">
-        一周 {courseLength(course).toFixed(0)}m ・ 道幅{' '}
-        {course.roadWidth.toFixed(1)}m ・{' '}
-        {course.captureMode === 'full_body' ? '全身' : '上半身・見切れ'}
-      </p>
       {warning && <p className="course-note">急カーブあり。ゆっくり走ろう。</p>}
       <form
         className="course-name"
@@ -151,13 +133,6 @@ export default function CourseReadyPage({
       </form>
     </section>
   );
-}
-
-function courseLength({ points }: CourseData) {
-  return points.reduce((sum, p, i) => {
-    const q = points[(i + 1) % points.length];
-    return sum + Math.hypot(q.x - p.x, q.z - p.z);
-  }, 0);
 }
 
 /** Top view of the whole course: colored walls, gray road, red START. */

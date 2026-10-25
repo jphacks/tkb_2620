@@ -14,8 +14,7 @@ export default function MemoriesPage({
       <button type="button" className="link-button back" onClick={onBack}>
         ← 受付に戻る
       </button>
-      <p className="eyebrow">再配達</p>
-      <h1 id="memories-title">どのコースで届ける？</h1>
+      <h1 id="memories-title">配達コース選択</h1>
       <SavedCourses onPlay={onPlay} />
     </section>
   );
