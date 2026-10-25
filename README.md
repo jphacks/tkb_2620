@@ -80,7 +80,7 @@ https://github.com/user-attachments/assets/eed7bd4c-35b3-4892-837c-68be94b7d355
 
 そのコースで3位以内に入ると、ランキングにチーム名を登録できます。作ったコースは「思い出のコース」としてホーム画面に残るので、過去に作ったルートを選んで、また配達に出かけられます。同じルートで記録を更新したり、別のふたりで挑戦したりできます。
 
-https://github.com/user-attachments/assets/dd337626-598d-4524-9071-d65559de94a1
+https://github.com/user-attachments/assets/ac4adbd5-2110-43de-82b0-0ddad8c5f621
 
 ### スコア
 
