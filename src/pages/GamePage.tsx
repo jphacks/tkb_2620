@@ -40,7 +40,7 @@ export default function GamePage({
     </span>
   );
   return (
-    <section className="game-page" aria-label="トラック試運転">
+    <section className="game-page" aria-label="配達中">
       {problem && (
         <p className="error-text" role="alert">
           写真のコースを読み込めなかったため、サンプルコースで走ります（

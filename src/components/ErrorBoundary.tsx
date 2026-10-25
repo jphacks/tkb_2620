@@ -4,7 +4,7 @@ type Props = {
   children: ReactNode;
   /** 「写真からやり直す」：撮影画面へ戻す */
   onRetake: () => void;
-  /** 「ホームへ戻る」 */
+  /** 「受付に戻る」 */
   onHome: () => void;
 };
 type State = { error: Error | null };
@@ -23,7 +23,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('BODY ROAD: 画面でエラーが起きました', error, info);
+    console.error('Bodrive: 画面でエラーが起きました', error, info);
   }
 
   private recover(action: () => void) {
@@ -38,7 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
       <section className="app-error" role="alert">
         <h1>問題が起きたため、画面を止めました</h1>
         <p>
-          写真やコースの処理で予期しないエラーが起きました。写真を選び直すか、ホームからやり直してください。
+          写真やコースの処理で予期しないエラーが起きました。写真を選び直すか、受付からやり直してください。
         </p>
         <code>{error.message}</code>
         <div className="capture-actions">
@@ -50,7 +50,7 @@ export class ErrorBoundary extends Component<Props, State> {
             写真からやり直す
           </button>
           <button type="button" onClick={() => this.recover(this.props.onHome)}>
-            ホームへ戻る
+            受付に戻る
           </button>
         </div>
       </section>

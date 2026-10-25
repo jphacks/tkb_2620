@@ -37,7 +37,6 @@ export function GameCanvas({
   onLobby?: () => void;
 }) {
   const audio = useRef<ReturnType<typeof createGameAudio> | null>(null);
-  const [soundEnabled, setSoundEnabled] = useState(soundSettings.enabled);
   const soundPreference = useRef(soundSettings.enabled);
   const previousFeedback = useRef<DrivingStatus | null>(null);
   const accelerationFeedback = useRef({ time: 0, speed: 0, harsh: false });
@@ -75,8 +74,10 @@ export function GameCanvas({
   }, [pausedReason]);
   const container = useRef<HTMLDivElement>(null),
     scene = useRef<ReturnType<typeof createScene> | null>(null);
-  const [error, setError] = useState(''),
-    [following, setFollowing] = useState(true);
+  const [error, setError] = useState('');
+  // ☰ 配達メニュー（STARTに戻る・配達を中断する・操作方法）
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [status, setStatus] = useState<DrivingStatus>({
     introducing: false,
     position: course.points[0],
@@ -204,7 +205,6 @@ export function GameCanvas({
           () => remoteInput.current?.() ?? null,
           () => paused.current,
         );
-        setFollowing(true);
         setError('');
       })
       .catch((cause: unknown) => {
@@ -247,57 +247,69 @@ export function GameCanvas({
                     : status.collided
                       ? '壁に接触 — ハンドルを切ってアクセルで復帰'
                       : status.active
-                        ? '走行中'
+                        ? '配達中'
                         : '画面をクリックして操作'
             }
           />
-          <details className="drive-help">
-            <summary>操作方法</summary>
-            <p>
-              ↑ / W：加速 / ↓ / S / Space：ブレーキ
-              <br />← → / A D：ハンドル / R：STARTへ
-            </p>
-          </details>
         </div>
         <div className="hud-extras">{toolbarExtra}</div>
-        <div className="drive-actions">
+        <div className="drive-menu">
           <button
-            aria-pressed={soundEnabled}
+            type="button"
+            className="drive-menu-button"
+            aria-expanded={menuOpen}
+            aria-controls="drive-menu-panel"
+            aria-label="配達メニュー"
             onClick={() => {
-              const enabled = !soundPreference.current;
-              soundPreference.current = enabled;
-              setSoundEnabled(enabled);
-              soundSettings.enabled = enabled;
-              audio.current?.setEnabled(enabled);
-              if (enabled) unlockAudio();
+              setMenuOpen(!menuOpen);
+              setHelpOpen(false);
             }}
           >
-            {soundEnabled ? 'サウンド：ON' : 'サウンド：OFF'}
+            <span aria-hidden="true">☰</span>
           </button>
-          <button
-            onClick={() => {
-              scene.current?.setFollowing(!following);
-              setFollowing(!following);
-            }}
-          >
-            {following ? 'コース全体を見る' : '追従カメラに戻る'}
-          </button>
-          <button
-            onClick={() => {
-              setDismissedPhoto(minimapPhoto ?? null);
-              scene.current?.resetTruck();
-              container.current?.focus();
-            }}
-          >
-            STARTに戻す
-          </button>
+          {menuOpen && (
+            <div className="drive-menu-panel" id="drive-menu-panel">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setDismissedPhoto(minimapPhoto ?? null);
+                  scene.current?.resetTruck();
+                  container.current?.focus();
+                }}
+              >
+                STARTに戻る
+              </button>
+              {onLobby && (
+                <button
+                  type="button"
+                  className="drive-menu-stop"
+                  onClick={onLobby}
+                >
+                  配達を中断する
+                </button>
+              )}
+              <button
+                type="button"
+                aria-expanded={helpOpen}
+                onClick={() => setHelpOpen(!helpOpen)}
+              >
+                操作方法
+              </button>
+              {helpOpen && (
+                <dl className="drive-menu-help">
+                  <dt>ハンドル係</dt>
+                  <dd>スマホを横に持って回す</dd>
+                  <dt>ペダル係</dt>
+                  <dd>奥へ倒すとアクセル・手前でブレーキ</dd>
+                  <dt>キーボード</dt>
+                  <dd>W/↑ 加速・S/↓ ブレーキ・A D/← → ハンドル・R START</dd>
+                </dl>
+              )}
+            </div>
+          )}
         </div>
       </div>
-      {status.introducing && (
-        <div className="intro-camera-notice">
-          <p>この道を、ふたりで走ろう。</p>
-        </div>
-      )}
       {status.countdown != null && (
         <div className="start-countdown" role="status" aria-live="polite">
           <span key={status.countdown}>
@@ -313,20 +325,6 @@ export function GameCanvas({
           <p className="goal-title">配送完了！</p>
           <p>お届け先まで、ふたりで運びきりました！</p>
           <p className="goal-time">{formatTime(status.time)}</p>
-          <div className="goal-actions">
-            {onFinish && result && (
-              <button onClick={() => onFinish(result)}>結果を見る</button>
-            )}
-            <button
-              onClick={() => {
-                setDismissedPhoto(minimapPhoto ?? null);
-                scene.current?.resetTruck();
-                container.current?.focus();
-              }}
-            >
-              もう一度
-            </button>
-          </div>
         </div>
       )}
       {/* 一時停止の表示はスタート前だけ。レース中は止めずに走り続ける */}
@@ -360,7 +358,7 @@ export function GameCanvas({
             >
               STARTに戻す
             </button>
-            {onLobby && <button onClick={onLobby}>ホームへ戻る</button>}
+            {onLobby && <button onClick={onLobby}>受付に戻る</button>}
           </div>
         </div>
       )}
@@ -384,9 +382,6 @@ export function GameCanvas({
           mapPosition?.course === course ? mapPosition.point : course.points[0]
         }
       />
-      <p className="course-caption">
-        反時計回りに走り、赤い屋根のお家へ配送します。Rでリセット。右下のミニマップで届け先を確認できます。
-      </p>
     </div>
   );
 }

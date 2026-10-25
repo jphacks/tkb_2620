@@ -140,14 +140,6 @@ export function CourseMinimap({
           <circle cx="0" cy="-13" r="2.5" fill="white" />
         </g>
       </svg>
-      <p className="minimap-legend">
-        <span>📍 現在位置</span>
-        <span>🏁 START</span>
-        <span>🏠 届け先</span>
-        <span>
-          <b className="minimap-drop-key">×</b> 落下地点
-        </span>
-      </p>
     </aside>
   );
 }

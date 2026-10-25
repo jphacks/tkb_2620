@@ -1578,3 +1578,875 @@ button:disabled {
   --impact-glow: #ffd54170;
   --impact-label: #725000;
 }
+
+/* ───────── 配送センターの世界観（#26） ─────────
+   結果画面の配送伝票（濃い線・紙・ずらした影）を全画面の基準にする。
+   --course-accent は選んだコースの人物の色（App が付ける） */
+:root {
+  --ink: #27382f;
+  --paper: #fffdf6;
+  --paper-line: #27382f;
+  --shadow-ink: #27382f22;
+  --muted: #576354;
+  --stamp: #c8372d;
+  --course-accent: #f2a65a;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.02em;
+}
+.brand-icon {
+  width: 30px;
+  height: 30px;
+  flex: none;
+}
+.brand-icon-start {
+  fill: var(--stamp);
+}
+.app-game .brand-icon {
+  width: 22px;
+  height: 22px;
+}
+.link-button {
+  border: 0;
+  background: none;
+  padding: 6px 2px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-weight: 700;
+}
+.link-button.back {
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 500;
+}
+.primary-button {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: white;
+  font-weight: 700;
+  padding: 14px 24px;
+}
+.primary-button:disabled {
+  cursor: default;
+  opacity: 1;
+  background: #dfe3da;
+  border-color: #dfe3da;
+  color: var(--muted);
+}
+
+/* ホーム＝受付 */
+.home-title {
+  font-size: clamp(28px, 5vw, 48px);
+  margin-bottom: 32px;
+  text-wrap: balance;
+}
+.route-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+/* 荷札：左にコースの色の帯、上に受付の区分 */
+.route-card {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  text-align: left;
+  padding: 24px 24px 22px 32px;
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+  box-shadow: 6px 6px 0 var(--shadow-ink);
+  transition:
+    transform 120ms,
+    box-shadow 120ms;
+}
+.route-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 10px;
+  background: var(--course-accent);
+  border-right: 2px dashed var(--paper-line);
+}
+.route-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 var(--shadow-ink);
+}
+.route-card-label {
+  width: fit-content;
+  padding: 2px 10px;
+  border: 2px solid var(--stamp);
+  border-radius: 4px;
+  color: var(--stamp);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+}
+.route-card-title {
+  font-size: 22px;
+  line-height: 1.4;
+}
+.route-card-text {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.route-card-go {
+  margin-top: 6px;
+  font-weight: 700;
+}
+.home-sample {
+  margin-top: 28px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-card {
+    transition: none;
+  }
+}
+
+/* 思い出のコース */
+.memories h1,
+.connect h1 {
+  font-size: clamp(26px, 4vw, 40px);
+  margin: 8px 0 16px;
+}
+.memories .saved-courses {
+  margin-top: 16px;
+}
+.memories .saved-courses > h2 {
+  display: none;
+}
+
+/* 出発前の点呼＝スマホの接続 */
+.connect-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px 32px;
+}
+.connect-head > div:first-child {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+.connect-route {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px 10px 10px;
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+}
+.connect-route small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.connect-route strong {
+  font-size: 16px;
+}
+.crew-slots {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+/* 配達員証：まだ登録していない枠は点線 */
+.crew-slot {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px 20px;
+  background: var(--paper);
+  border: 2px dashed #9aa59a;
+  border-radius: 6px;
+}
+.crew-slot.joined {
+  border: 2px solid var(--paper-line);
+  box-shadow: 6px 6px 0 var(--shadow-ink);
+}
+.crew-slot-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.crew-slot-role {
+  font-size: 20px;
+  font-weight: 800;
+}
+.crew-slot-state {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #e9ede4;
+  font-size: 13px;
+  font-weight: 700;
+}
+.joined .crew-slot-state {
+  background: var(--ink);
+  color: white;
+}
+.crew-slot-qr {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 190px;
+  background: white;
+  border-radius: 4px;
+}
+.crew-slot-qr a {
+  display: block;
+  line-height: 0;
+}
+.joined .crew-slot-qr svg {
+  opacity: 0.25;
+}
+.crew-slot-wait {
+  color: var(--muted);
+  font-size: 13px;
+}
+/* 登録できたら、伝票と同じ赤い丸スタンプを押す */
+.crew-stamp {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  border: 4px solid var(--stamp);
+  border-radius: 50%;
+  color: var(--stamp);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  transform: rotate(-12deg);
+  animation: crew-stamp 220ms ease-out;
+}
+@keyframes crew-stamp {
+  from {
+    transform: rotate(-12deg) scale(1.6);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crew-stamp {
+    animation: none;
+  }
+}
+.crew-slot-how {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.connect-actions,
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin-top: 28px;
+}
+
+/* 思い出のコース：縦長の荷札カードを並べる（#26 #31）。
+   一覧は思い出度の高い順なので、左上が一番よく思い出されているコース。
+   左から右へ、行が埋まったら次の行へ並ぶ */
+.memories .saved-courses {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+.memories .saved-courses-note {
+  margin-bottom: 20px;
+}
+.memories .saved-course-list {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 22px;
+}
+.memories .saved-course {
+  position: relative;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto 1fr auto;
+  align-items: start;
+  gap: 12px;
+  padding: 30px 16px 16px;
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  border-radius: 6px 6px 10px 10px;
+  box-shadow: 5px 5px 0 var(--shadow-ink);
+}
+/* 荷札の穴 */
+.memories .saved-course::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border: 2px solid var(--paper-line);
+  border-radius: 50%;
+  background: var(--paper);
+}
+.memories .saved-course > .course-thumbnail {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  max-width: 100%;
+  border-radius: 4px;
+}
+.memories .saved-course-body {
+  gap: 6px;
+}
+.memories .saved-course-name {
+  font-size: 17px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.memories .saved-course > button {
+  grid-column: 1;
+  width: 100%;
+  align-self: end;
+}
+/* 細い荷札でも TOP3 は1チーム1行（順位・チーム名・点・タイム・積荷）。
+   チーム名だけ縮めて、収まらなければ「…」にする */
+.memories .ranking-table.compact {
+  font-size: 11px;
+}
+.memories .ranking-table.compact li {
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  gap: 6px;
+  padding: 1px 2px;
+  white-space: nowrap;
+}
+.memories .ranking-table.compact .ranking-time,
+.memories .ranking-table.compact .ranking-cargo {
+  color: var(--muted);
+}
+/* 一番よく思い出されているコースには「いちばんの思い出」の印 */
+.memories .saved-course:first-child:not(.sample)::after {
+  content: 'いちばんの思い出';
+  position: absolute;
+  top: -12px;
+  right: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--course-accent);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+@media (max-width: 520px) {
+  .memories .saved-course-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 12px;
+  }
+  .memories .saved-course {
+    padding: 26px 10px 12px;
+    gap: 8px;
+  }
+  .memories .saved-course-name {
+    font-size: 15px;
+  }
+  .memories .saved-course > button {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+}
+
+/* 配送の世界にそろえる（#26）：カード・枠・ボタンを伝票と同じ紙と線にする */
+.card {
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+  box-shadow: 6px 6px 0 var(--shadow-ink);
+}
+button {
+  border-radius: 8px;
+}
+/* 写真を置く場所は、荷物の受付口（点線の枠）。全身が写ると黄色い実線になる */
+.capture-frame {
+  border: 3px dashed var(--paper-line);
+  border-radius: 6px;
+  background: var(--paper);
+}
+.capture-frame.is-full-body {
+  border-style: solid;
+}
+.course-preview {
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+}
+.app-game .course-preview {
+  border: 0;
+  border-radius: 0;
+}
+
+/* はじめての配達（チュートリアル、#26）。配達マニュアルを1枚ずつめくる */
+.home-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  margin-top: 28px;
+}
+.guide-button {
+  padding: 10px 18px;
+  border: 2px solid var(--paper-line);
+  background: var(--paper);
+  font-weight: 800;
+  box-shadow: 4px 4px 0 var(--shadow-ink);
+}
+.guide {
+  width: min(92vw, 420px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+.guide::backdrop {
+  background: #17251ea6;
+}
+.guide-sheet {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  padding: 18px 22px 20px;
+  text-align: center;
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+  box-shadow: 8px 8px 0 #0004;
+}
+.guide-head {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 12px;
+  font-weight: 800;
+}
+.guide-label {
+  padding: 1px 8px;
+  border: 2px solid var(--stamp);
+  border-radius: 4px;
+  color: var(--stamp);
+  letter-spacing: 0.15em;
+}
+.guide-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.guide-art {
+  width: 180px;
+  height: 120px;
+  margin: 6px 0 2px;
+}
+.guide-art-road {
+  stroke: var(--course-accent);
+  stroke-width: 5;
+}
+.guide h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.guide p {
+  margin: 0;
+  line-height: 1.6;
+}
+.guide-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.guide-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #cfd5cb;
+}
+.guide-dots .on {
+  background: var(--ink);
+}
+.guide-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* 走行画面の ☰ 配達メニュー（#26）。ふだんはボタン1つだけにして画面をすっきりさせる */
+.drive-menu {
+  position: relative;
+  pointer-events: auto;
+}
+.drive-menu-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 20px;
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  box-shadow: 3px 3px 0 var(--shadow-ink);
+}
+.drive-menu-panel {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  display: grid;
+  gap: 6px;
+  width: min(280px, 80vw);
+  padding: 10px;
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+  box-shadow: 6px 6px 0 var(--shadow-ink);
+}
+.drive-menu-panel > button {
+  width: 100%;
+  text-align: left;
+  font-weight: 700;
+}
+.drive-menu-stop {
+  color: var(--stamp);
+}
+.drive-menu-help {
+  display: grid;
+  gap: 2px;
+  margin: 4px 2px 0;
+  font-size: 12px;
+}
+.drive-menu-help dt {
+  font-weight: 800;
+  margin-top: 4px;
+}
+.drive-menu-help dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* 読み込み中：道路を右へ走るトラック（#26） */
+.truck-road {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 520px);
+  margin: 16px auto;
+}
+.truck-road-lane {
+  position: relative;
+  flex: 1;
+  height: 22px;
+  margin: 18px 34px 0 0;
+  background: #4a5550;
+  border-radius: 3px;
+  /* 真ん中の白線 */
+  background-image: linear-gradient(90deg, #fff 0 60%, transparent 60%);
+  background-size: 22px 2px;
+  background-repeat: repeat-x;
+  background-position: 0 center;
+}
+.truck-road-done {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: color-mix(in srgb, var(--course-accent) 45%, transparent);
+  border-radius: 3px 0 0 3px;
+  transition: width 0.2s linear;
+}
+.truck-road-truck {
+  position: absolute;
+  bottom: 8px;
+  width: 52px;
+  height: 32px;
+  margin-left: -26px;
+  fill: var(--course-accent);
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  transition: left 0.2s linear;
+}
+.truck-road-window {
+  fill: #dff1ff;
+}
+.truck-road-wheel {
+  fill: var(--ink);
+}
+.truck-road-goal {
+  position: absolute;
+  right: -32px;
+  bottom: 0;
+  font-size: 24px;
+  line-height: 1;
+}
+.truck-road-percent {
+  width: 3em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+@media (prefers-reduced-motion: reduce) {
+  .truck-road-truck,
+  .truck-road-done {
+    transition: none;
+  }
+}
+
+/* ホーム：大きな荷札2枚。右の列は「思い出のコース」の下に「おためし便」 */
+.home-top {
+  display: flex;
+  justify-content: flex-end;
+  margin: -24px 0 16px;
+}
+.home .route-choices {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+.route-side {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 20px;
+  min-width: 0;
+}
+.route-card-big {
+  min-height: clamp(260px, 40vh, 380px);
+  align-content: space-between;
+  justify-items: start;
+  padding: 26px 28px 26px 38px;
+}
+.route-card-big .route-card-title {
+  font-size: clamp(24px, 3vw, 34px);
+}
+.route-card-art {
+  width: min(220px, 70%);
+  height: auto;
+  justify-self: center;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.route-card-art-road {
+  stroke: var(--course-accent);
+  stroke-width: 6;
+}
+.sample-ticket {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 16px 20px;
+  background: var(--paper);
+  border: 2px dashed var(--paper-line);
+  border-radius: 6px;
+  font-weight: 700;
+  text-align: left;
+}
+.sample-ticket-label {
+  padding: 2px 10px;
+  border-radius: 4px;
+  background: var(--ink);
+  color: white;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+}
+@media (max-width: 640px) {
+  .home .route-choices {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .route-card-big {
+    min-height: 220px;
+  }
+  .home-top {
+    margin-top: -12px;
+  }
+}
+
+/* 写真：集荷票の上に写真を置く */
+.capture-slip-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: var(--ink);
+  color: white;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  border-radius: 6px 6px 0 0;
+}
+.capture-slip-head span:last-child {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+.capture-slip-head + .capture-frame {
+  border-top: 0;
+  border-radius: 0 0 6px 6px;
+}
+.capture-parcel {
+  width: 72px;
+  height: 64px;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+.capture-placeholder p {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 12px 0 4px;
+}
+.capture-note {
+  display: inline-block;
+  padding: 2px 10px;
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+}
+/* 右上は「コース名」と ☰ を横に並べる */
+.app-game .course-toolbar {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.app-game .hud-extras {
+  grid-column: 2;
+  grid-row: 1;
+}
+.app-game .drive-menu {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+/* TOP3 に入ったときだけ出る、チーム名の登録（#29 #26） */
+.ranking-popup {
+  width: min(92vw, 440px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+.ranking-popup::backdrop {
+  background: #17251ea6;
+}
+.ranking-popup-sheet {
+  position: relative;
+  padding: 26px 24px 22px;
+  background: var(--paper);
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+  box-shadow: 8px 8px 0 #0004;
+}
+.ranking-popup-sheet form {
+  display: grid;
+  gap: 14px;
+}
+.ranking-popup-sheet h2 {
+  margin: 0 0 12px;
+  font-size: 22px;
+}
+.ranking-popup-sheet form h2 {
+  margin: 0;
+}
+.ranking-popup-stamp {
+  position: absolute;
+  top: -18px;
+  right: 18px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  width: 70px;
+  height: 70px;
+  border: 4px solid var(--stamp);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--stamp);
+  font-weight: 900;
+  font-size: 18px;
+  transform: rotate(-12deg);
+}
+.ranking-popup-field {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+.ranking-popup-field input {
+  font: inherit;
+  font-size: 18px;
+  padding: 10px 12px;
+  border: 2px solid var(--paper-line);
+  border-radius: 6px;
+  background: white;
+}
+.ranking-popup-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.ranking-popup .ranking-table {
+  margin-bottom: 16px;
+}
+
+/* 配送完了伝票を大きく */
+.result-page .delivery-slip {
+  width: min(100%, 640px);
+  padding: 32px 40px 28px;
+  font-size: 18px;
+}
+.result-page .slip-title {
+  font-size: 30px;
+}
+.result-page .slip-strong {
+  font-size: 34px;
+}
+.result-page .slip-score span {
+  font-size: 16px;
+}
+.result-page .slip-score strong {
+  font-size: 72px;
+}
+
+/* ルートを作っている間：円の道路をトラックが反時計回りに走る（ゲームと同じ向き） */
+.generating-road {
+  fill: none;
+  stroke: #4a5550;
+  stroke-width: 22;
+}
+.generating-lane {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-dasharray: 10 8;
+}
+.course-generating .generating-truck {
+  fill: var(--course-accent);
+  stroke: var(--ink);
+  stroke-width: 2;
+  animation-name: generating-drive-ccw;
+}
+.generating-wheel {
+  fill: var(--ink);
+}
+@keyframes generating-drive-ccw {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+/* 写真の読み込み：集荷票と同じ横幅のまっすぐな道路 */
+.capture-page .truck-road {
+  width: 100%;
+  margin: 14px 0;
+}
+/* 人型の道は拡大しても線の太さを変えない（塗りつぶしに見えないように） */
+.route-card-art-road,
+.guide-art-road {
+  vector-effect: non-scaling-stroke;
+}

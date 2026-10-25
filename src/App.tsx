@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { controllerLossReason, validateCourseData } from './game/safety';
 import type { CapturedPerson } from './capture/capture';
-import { Button } from './components/Button';
+import { BrandMark } from './components/BrandMark';
 import { ConnectionStatus } from './components/ConnectionStatus';
-import { RoomPanel } from './components/RoomPanel';
 import { useRoom } from './socket/useRoom';
 import type { DeliveryResult } from './game/score';
 import { useRemoteInput } from './socket/useRemoteInput';
@@ -16,19 +15,19 @@ import { SAMPLE_COURSE_ID } from './db/courseRow';
 import HomePage from './pages/HomePage';
 import CapturePage from './pages/CapturePage';
 import GamePage from './pages/GamePage';
+import MemoriesPage from './pages/MemoriesPage';
+import ConnectPage from './pages/ConnectPage';
+import { sampleCourse } from './fixtures/sampleCourse';
 import ResultPage from './pages/ResultPage';
 import SteeringPage from './pages/SteeringPage';
 import PedalPage from './pages/PedalPage';
 
-const pages = [
-  { label: 'ホーム', View: HomePage },
-  { label: '写真', View: null },
-  { label: 'ゲーム', View: GamePage },
-  { label: '結果', View: ResultPage },
-];
-const PHOTO_PAGE = 1;
-const GAME_PAGE = 2;
-const RESULT_PAGE = 3;
+/**
+ * 画面の流れ（#26）。タブはなくし、受付から順に進む。
+ *   home ─┬─ photo → (コース完成) ─┐
+ *         └─ memories ─────────────┴→ connect → game → result
+ */
+type Screen = 'home' | 'photo' | 'memories' | 'connect' | 'game' | 'result';
 
 // QRコードのURL（?room=XXXX&role=steering|pedal）から参加情報を読む
 function readJoinParams(): { roomId: string; role: ControllerRole } | null {
@@ -41,12 +40,12 @@ function readJoinParams(): { roomId: string; role: ControllerRole } | null {
 }
 
 const roleLabels: Record<ControllerRole, string> = {
-  steering: 'ハンドル',
-  pedal: 'アクセル・ブレーキ',
+  steering: 'ハンドル係',
+  pedal: 'ペダル係',
 };
 
 export default function App() {
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState<Screen>('home');
   const [firstPlayPhoto, setFirstPlayPhoto] = useState<CapturedPerson | null>(
     null,
   );
@@ -93,7 +92,7 @@ export default function App() {
 
   // ゲーム画面にいる間、参加しているスマホを「使っている担当」として覚える
   useEffect(() => {
-    if (active !== GAME_PAGE || !room) return;
+    if (active !== 'game' || !room) return;
     const joined = (['steering', 'pedal'] as const).filter((r) => room[r]);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- room updates arrive as events
     setUsedRoles((used) =>
@@ -102,7 +101,7 @@ export default function App() {
   }, [active, room]);
   // 使っていたスマホとの通信が切れたら一時停止の理由を出す。戻れば自動で消える
   useEffect(() => {
-    if (active !== GAME_PAGE || !usedRoles.size) return;
+    if (active !== 'game' || !usedRoles.size) return;
     const check = () =>
       setPausedReason(
         controllerLossReason({
@@ -118,36 +117,56 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [active, usedRoles, room, connected, getLastInputAt]);
 
-  function goTo(page: number) {
-    if (active === GAME_PAGE && page !== GAME_PAGE) setFirstPlayPhoto(null);
+  function goTo(page: Screen) {
+    if (active === 'game' && page !== 'game') setFirstPlayPhoto(null);
     // ゲームを出たら、次のゲームでは改めてスマホの参加を見る
-    if (page !== GAME_PAGE) setUsedRoles(new Set());
+    if (page !== 'game') setUsedRoles(new Set());
     setActive(page);
+    window.scrollTo(0, 0);
+  }
+  /** 写真の画面を最初からにする */
+  function startNewCourse() {
+    setCaptured(null);
+    setPhotoStep('capture');
+    setCaptureNotice('');
+    goTo('photo');
+  }
+  const bothJoined = Boolean(room?.steering && room?.pedal);
+  // 接続画面の「戻る」で帰る先（コースを選んだ画面）
+  const [connectBack, setConnectBack] = useState<Screen>('home');
+  function goToConnect(from: Screen) {
+    setConnectBack(from);
+    goTo('connect');
   }
   /** 写真・コースが使えないとき、理由を添えて撮影画面へ戻す（#22） */
   function backToCapture(reason: string) {
     setCaptured(null);
     setPhotoStep('capture');
     setCaptureNotice(reason);
-    goTo(PHOTO_PAGE);
+    goTo('photo');
   }
 
+  // サーバーの状態は、つながっていないときだけ出す
   const header = (
     <header>
-      <a href="/" className="brand">
-        BODY ROAD
-      </a>
-      <ConnectionStatus connected={connected} />
+      <BrandMark onHome={join ? undefined : () => goTo('home')} />
+      {!connected && <ConnectionStatus connected={connected} />}
     </header>
   );
+  // 受付・コース選択・写真はいつも Bodrive のオレンジ。
+  // コースを選んだあと（接続・走行・伝票）だけ、そのコースの人物の色をアクセントにする（#26）
+  const accent =
+    course && (active === 'connect' || active === 'game' || active === 'result')
+      ? course.data.themeColor
+      : sampleCourse.themeColor;
 
   if (join) {
     const Controller = join.role === 'steering' ? SteeringPage : PedalPage;
     const statusText = error
       ? error
       : role && room
-        ? `「${roleLabels[role]}」担当で接続済み`
-        : 'ゲームに接続しています...';
+        ? `${roleLabels[role]}として登録しました`
+        : '配送センターに接続しています…';
     return (
       <div className="app">
         {header}
@@ -161,36 +180,37 @@ export default function App() {
     );
   }
 
-  const View = pages[active].View;
+  const courseData = course?.data ?? sampleCourse;
+  const courseLabel = course?.name ?? 'サンプルコース（楕円）';
   return (
-    <div className={active === GAME_PAGE ? 'app app-game' : 'app'}>
+    <div
+      className={active === 'game' ? 'app app-game' : 'app'}
+      style={{ '--course-accent': accent } as CSSProperties}
+    >
       {header}
-      <nav aria-label="画面プレビュー">
-        {pages.map((page, index) => (
-          <Button
-            key={page.label}
-            aria-pressed={index === active}
-            onClick={() => goTo(index)}
-          >
-            {page.label}
-          </Button>
-        ))}
-      </nav>
       <main>
+        {active === 'photo' && (
+          <button
+            type="button"
+            className="link-button back"
+            onClick={() => goTo('home')}
+          >
+            ← 受付に戻る
+          </button>
+        )}
         <ErrorBoundary
           onRetake={() =>
             backToCapture(
               '問題が起きたため、写真の選択からやり直します。別の写真も試してください。',
             )
           }
-          onHome={() => goTo(0)}
+          onHome={() => goTo('home')}
         >
-          {active === GAME_PAGE ? (
+          {active === 'game' ? (
             <GamePage
               minimapPhoto={firstPlayPhoto}
               course={course?.data}
               courseName={course?.name}
-              roomSlot={<RoomPanel connected={connected} room={room} />}
               getRemoteInput={getRemoteInput}
               onFinish={(finished) => {
                 // ランキング用にコースの id を付ける（#29）。写真なしならサンプルの id
@@ -198,26 +218,52 @@ export default function App() {
                   ...finished,
                   courseId: course ? course.id : SAMPLE_COURSE_ID,
                 });
-                goTo(RESULT_PAGE);
+                goTo('result');
               }}
               pausedReason={usedRoles.size ? pausedReason : null}
               onKeyboardContinue={() => setUsedRoles(new Set())}
-              onLobby={() => goTo(0)}
+              onLobby={() => goTo('home')}
             />
-          ) : active === RESULT_PAGE ? (
-            <ResultPage result={result} onRetry={() => goTo(GAME_PAGE)} />
-          ) : active === 0 ? (
-            <HomePage
-              onPlaySaved={(saved) => {
+          ) : active === 'result' ? (
+            <ResultPage
+              result={result}
+              // スマホがつながったままなら、そのままもう一度走る
+              onRetry={() => goTo(bothJoined ? 'game' : 'connect')}
+              onHome={() => goTo('home')}
+            />
+          ) : active === 'connect' ? (
+            <ConnectPage
+              connected={connected}
+              room={room}
+              course={courseData}
+              courseName={courseLabel}
+              onStart={() => goTo('game')}
+              onBack={() => goTo(connectBack)}
+            />
+          ) : active === 'memories' ? (
+            <MemoriesPage
+              onBack={() => goTo('home')}
+              onPlay={(saved) => {
                 // 保存したコースで遊ぶ（#25）
                 setCourse({ data: saved.data, name: saved.name, id: saved.id });
+                setFirstPlayPhoto(null);
                 setSaveNotice('');
-                goTo(GAME_PAGE);
+                goToConnect('memories');
                 recordPlay(saved.id).catch(() => {});
               }}
             />
-          ) : View ? (
-            <View />
+          ) : active === 'home' ? (
+            <HomePage
+              hasMemories={isDatabaseConfigured}
+              onNewCourse={startNewCourse}
+              onMemories={() => goTo('memories')}
+              onSample={() => {
+                setCourse(null);
+                setFirstPlayPhoto(null);
+                setSaveNotice('');
+                goToConnect('home');
+              }}
+            />
           ) : photoStep === 'course' && captured ? (
             <CourseReadyPage
               key={captured.capturedAt}
@@ -233,7 +279,7 @@ export default function App() {
                 setFirstPlayPhoto(captured);
                 setCourse({ data, name });
                 setSaveNotice('');
-                goTo(GAME_PAGE);
+                goToConnect('photo');
                 // 遊び始めると同時に裏で保存する（#25）。失敗してもゲームは続ける
                 if (isDatabaseConfigured)
                   saveCourse(data, name)
@@ -247,7 +293,7 @@ export default function App() {
                     })
                     .catch((cause: unknown) =>
                       setSaveNotice(
-                        `コースを保存できませんでした。遊ぶことはできます。${cause instanceof Error ? `（${cause.message}）` : ''}`,
+                        `コースを保存できませんでした。配達はそのまま続けられます。${cause instanceof Error ? `（${cause.message}）` : ''}`,
                       ),
                     );
               }}
@@ -280,7 +326,6 @@ export default function App() {
         {error && <p className="error-text">{error}</p>}
         {saveNotice && <p className="error-text">{saveNotice}</p>}
       </main>
-      <footer>開発用のひな形です。ゲーム機能はこれから実装します。</footer>
     </div>
   );
 }
