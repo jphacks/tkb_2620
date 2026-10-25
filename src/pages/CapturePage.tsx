@@ -230,7 +230,7 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
               <path d="M6 16l26 12 26-12M32 28v26M19 10l26 12" />
             </svg>
             <p>ひとりで写った写真をどうぞ</p>
-            <small>上半身だけでもOK・JPEG/PNG/WebP 20MBまで</small>
+            <small>上半身だけでもOK・JPEG/PNG/WebP/HEIC 20MBまで</small>
           </div>
         )}
       </div>
@@ -264,7 +264,7 @@ export default function CapturePage({ captured, onConfirm, notice }: Props) {
       <input
         ref={input}
         type="file"
-        accept="image/*"
+        accept="image/*,.heic,.heif"
         hidden
         aria-label="人物の写真を選択"
         onChange={(event) => {
