@@ -73,25 +73,25 @@
 
 携帯などで撮った人物写真を選びます。認識した人物の外周が線で表示されるので、コースにしたい形になっているか確認します。上半身だけでも、一部が見切れていても使えます。写真を使わず、サンプルコースで試すこともできます。
 
-https://github.com/user-attachments/assets/1fb5b839-5e5b-4ec5-8afb-08f01dffc46c
+https://github.com/user-attachments/assets/2d2467ba-b4d3-48e7-b5e0-1d0b8dcc8b50
 
 #### 2. 自分だけのコースを作る
 
 人物の輪郭から道路を作り、写真の色を壁に反映します。完成したコースを全体マップで確認し、名前を付けてゲームへ進みます。作成直後のマップには切り抜き写真も表示され、元のポーズと道のつながりを見比べられます。
 
-https://github.com/user-attachments/assets/efd4e667-1c3f-4cf6-a547-55281606eb4a
+https://github.com/user-attachments/assets/4618d8d3-21ed-465f-ad3f-11792eb2e206
 
 #### 3. スマホをつないで、役割を分ける
 
 PC画面のQRコードを、それぞれのスマホで読み取ります。ハンドル係は端末を横に持って回し、ペダル係は縦に持って前後へ傾けます。
 
-https://github.com/user-attachments/assets/6f4f53fd-733e-4969-83f2-34183c7eae9d
+https://github.com/user-attachments/assets/90209b2a-1f61-408c-9b10-cf6c306da64c
 
 #### 4. 声をかけ合いながら、荷物を届ける
 
 出発前に、カメラがコース全体を見渡してから、配送センターのトラックの後ろへ移ります。「ここで曲がって！」「ちょっと減速！」と相談しながら、コースの約9割地点にある赤い屋根のお家へ荷物を届けます。急な操作では荷物が滑り、荷台から落ちることも。ミニマップで現在地を確認しながら、速さと丁寧さの両方を意識して走ります。
 
-https://github.com/user-attachments/assets/eed7bd4c-35b3-4892-837c-68be94b7d355
+https://github.com/user-attachments/assets/f688b97c-684b-43a6-ad36-6cfeff72c39f
 
 #### 5. 配送伝票で結果を確認し、また配達する
 
@@ -99,7 +99,7 @@ https://github.com/user-attachments/assets/eed7bd4c-35b3-4892-837c-68be94b7d355
 
 そのコースで3位以内に入ると、ランキングにチーム名を登録できます。作ったコースは「思い出のコース」としてホーム画面に残るので、過去に作ったルートを選んで、また配達に出かけられます。同じルートで記録を更新したり、別のふたりで挑戦したりできます。
 
-https://github.com/user-attachments/assets/ac4adbd5-2110-43de-82b0-0ddad8c5f621
+https://github.com/user-attachments/assets/efb0d149-8556-42f4-8b1a-fc7fb5b0708e
 
 ### スコア
 
