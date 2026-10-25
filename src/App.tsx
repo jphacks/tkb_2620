@@ -74,6 +74,15 @@ export default function App() {
   const [pausedReason, setPausedReason] = useState<string | null>(null);
   const [join] = useState(readJoinParams);
   const roomRequested = useRef(false);
+  // 写真から作ったコースの1回目は、保存と一緒に数える（保存が終わるまで id がないため）
+  const firstRunCounted = useRef(false);
+  /** 走り始める。プレイ回数と最終プレイ日時は、実際に走り出したときだけ更新する（#28） */
+  function startRun() {
+    prepareAudio();
+    if (firstRunCounted.current) firstRunCounted.current = false;
+    else if (course?.id) recordPlay(course.id).catch(() => {});
+    goTo('game');
+  }
 
   // スマホ: 接続（再接続）するたびにQRのルームへ参加する
   useEffect(() => {
@@ -229,10 +238,7 @@ export default function App() {
             <ResultPage
               result={result}
               // スマホがつながったままなら、そのままもう一度走る
-              onRetry={() => {
-                prepareAudio();
-                goTo(bothJoined ? 'game' : 'connect');
-              }}
+              onRetry={() => (bothJoined ? startRun() : goTo('connect'))}
               onHome={() => goTo('home')}
             />
           ) : active === 'connect' ? (
@@ -241,10 +247,7 @@ export default function App() {
               room={room}
               course={courseData}
               courseName={courseLabel}
-              onStart={() => {
-                prepareAudio();
-                goTo('game');
-              }}
+              onStart={startRun}
               onBack={() => goTo(connectBack)}
             />
           ) : active === 'memories' ? (
@@ -253,10 +256,10 @@ export default function App() {
               onPlay={(saved) => {
                 // 保存したコースで遊ぶ（#25）
                 setCourse({ data: saved.data, name: saved.name, id: saved.id });
+                firstRunCounted.current = false;
                 setFirstPlayPhoto(null);
                 setSaveNotice('');
                 goToConnect('memories');
-                recordPlay(saved.id).catch(() => {});
               }}
             />
           ) : active === 'home' ? (
@@ -266,6 +269,7 @@ export default function App() {
               onMemories={() => goTo('memories')}
               onSample={() => {
                 setCourse(null);
+                firstRunCounted.current = false;
                 setFirstPlayPhoto(null);
                 setSaveNotice('');
                 goToConnect('home');
@@ -287,6 +291,7 @@ export default function App() {
                 setCourse({ data, name });
                 setSaveNotice('');
                 goToConnect('photo');
+                firstRunCounted.current = isDatabaseConfigured;
                 // 遊び始めると同時に裏で保存する（#25）。失敗してもゲームは続ける
                 if (isDatabaseConfigured)
                   saveCourse(data, name)
