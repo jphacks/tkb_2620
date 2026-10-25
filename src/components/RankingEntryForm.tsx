@@ -156,7 +156,8 @@ export function RankingEntryForm({ result }: { result: DeliveryResult }) {
                 disabled={state.kind === 'sending'}
               />
               <small className="ranking-popup-note">
-                チーム名はランキングに公開され、ほかの人にも表示されます。
+                {[...name].length}/{DISPLAY_NAME_MAX}
+                文字。チーム名はランキングに公開され、ほかの人にも表示されます。
               </small>
             </label>
             {state.kind === 'error' && <p role="alert">{state.message}</p>}

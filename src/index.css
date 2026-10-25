@@ -2533,3 +2533,8 @@ button {
     font-size: 13px;
   }
 }
+
+/* ポップアップの角に重ねた TOP3 のはんこを切らない（dialog は既定で中身をはみ出させない） */
+.ranking-popup {
+  overflow: visible;
+}
