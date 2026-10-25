@@ -6,7 +6,7 @@
 
 人物写真から体の輪郭を抽出し、自分たちの姿を道路に変えるゲームです。髪・肌・服の色も道路の壁に反映されます。2人がそれぞれスマートフォンの傾きでハンドルとアクセル・ブレーキを担当し、荷物を落とさずにゴールを目指します。
 
-**[▶ 今すぐ遊ぶ](https://bodrive.onrender.com)**　／　**[▶ デモ動画（YouTube）](https://youtu.be/AljSOdaH4es)**　／　**[▶ 発表スライド（PDF）](docs/presentation/bodrive-slides.pdf?raw=true)**
+**[▶ 今すぐ遊ぶ](https://bodrive.onrender.com)**　／　**[▶ デモ動画（YouTube）](https://youtu.be/AljSOdaH4es)**　／　**[▶ 発表スライド（PDF）](https://github.com/jphacks/tkb_2620/raw/main/docs/presentation/bodrive-slides.pdf)**
 
 ※ スマホの傾き操作には、PC1台とスマートフォン2台が必要です。スマホがなくても、PCのキーボードで走れます。公開版は無料のサーバーで動かしているため、しばらく使われていないと最初の接続に1分ほどかかることがあります。
 
