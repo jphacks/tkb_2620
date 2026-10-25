@@ -153,8 +153,12 @@ export default function App() {
       {!connected && <ConnectionStatus connected={connected} />}
     </header>
   );
-  // 選んだコースの人物の色を、画面のアクセントにする（#26）
-  const accent = course?.data.themeColor ?? sampleCourse.themeColor;
+  // 受付・コース選択・写真はいつも Bodrive のオレンジ。
+  // コースを選んだあと（接続・走行・伝票）だけ、そのコースの人物の色をアクセントにする（#26）
+  const accent =
+    course && (active === 'connect' || active === 'game' || active === 'result')
+      ? course.data.themeColor
+      : sampleCourse.themeColor;
 
   if (join) {
     const Controller = join.role === 'steering' ? SteeringPage : PedalPage;
