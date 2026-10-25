@@ -14,11 +14,21 @@ import {
 } from '../db/supabase';
 import { computeScore, type DeliveryResult } from '../game/score';
 
-const NAME_STORAGE = 'body-road:display-name';
+const NAME_STORAGE = 'bodrive:display-name';
+/** 旧名（BODY ROAD）のころのキー。覚えていた名前は新しいキーへ引き継ぐ */
+const OLD_NAME_STORAGE = 'body-road:display-name';
 
 function rememberedName() {
   try {
-    return localStorage.getItem(NAME_STORAGE) ?? '';
+    const name =
+      localStorage.getItem(NAME_STORAGE) ??
+      localStorage.getItem(OLD_NAME_STORAGE) ??
+      '';
+    if (name && localStorage.getItem(NAME_STORAGE) === null) {
+      localStorage.setItem(NAME_STORAGE, name);
+      localStorage.removeItem(OLD_NAME_STORAGE);
+    }
+    return name;
   } catch {
     return '';
   }
@@ -145,6 +155,9 @@ export function RankingEntryForm({ result }: { result: DeliveryResult }) {
                 onChange={(event) => setName(event.target.value)}
                 disabled={state.kind === 'sending'}
               />
+              <small className="ranking-popup-note">
+                チーム名はランキングに公開され、ほかの人にも表示されます。
+              </small>
             </label>
             {state.kind === 'error' && <p role="alert">{state.message}</p>}
             <div className="ranking-popup-actions">
