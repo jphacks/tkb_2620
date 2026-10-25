@@ -97,7 +97,7 @@ export function controllerLossReason({
     return 'サーバーとの接続が切れました。再接続を待っています。';
   const missing = [...used].filter((role) => !room[role]);
   if (missing.length)
-    return `${missing.map((r) => ROLE_LABELS[r]).join('・')}のスマホとの接続が切れました。QRコードを読み直すと再開します。`;
+    return `${missing.map((r) => ROLE_LABELS[r]).join('・')}のスマホとの接続が切れました。スマホの画面を再読み込みすると再開します。`;
   // A phone that has not sent anything yet (just joined) is not silent.
   const silent = [...used].filter((role) => {
     const at = lastInputAt[role];

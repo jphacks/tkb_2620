@@ -33,7 +33,7 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   },
 });
 io.on('connection', (socket) => {
-  socket.emit('server:ready', { message: 'BODY ROAD server ready' });
+  socket.emit('server:ready', { message: 'Bodrive server ready' });
   socket.on('connection:ping', (ack) => {
     if (typeof ack === 'function') ack();
   });
@@ -99,7 +99,7 @@ io.on('connection', (socket) => {
   });
 });
 httpServer.listen(port, '0.0.0.0', () =>
-  console.log(`BODY ROAD server: http://localhost:${port}`),
+  console.log(`Bodrive server: http://localhost:${port}`),
 );
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {

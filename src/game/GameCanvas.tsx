@@ -50,6 +50,8 @@ export function GameCanvas({
     }
   }
   useEffect(() => {
+    // 「出発する」で準備した音を、画面に触らなくても鳴らせるようにする
+    unlockAudio();
     const silence = () => audio.current?.update(0, false);
     window.addEventListener('blur', silence);
     document.addEventListener('visibilitychange', silence);

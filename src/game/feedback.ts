@@ -49,6 +49,20 @@ export function feedbackEvents(
   };
 }
 
+/**
+ * 「出発する」など、画面を押したその場で呼ぶ。
+ * ブラウザは人が操作したあとでないと音を出させないため、走り出す前に音の準備をしておく。
+ */
+export function prepareAudio() {
+  if (!soundSettings.enabled) return;
+  try {
+    sharedContext ??= new AudioContext();
+    void sharedContext.resume().catch(() => undefined);
+  } catch {
+    // Unsupported audio must never prevent playing the game.
+  }
+}
+
 /** Synthesized locally: no sound files or network requests are needed. */
 export function createGameAudio() {
   const context = (sharedContext ??= new AudioContext());
