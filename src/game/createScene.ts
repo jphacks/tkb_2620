@@ -35,6 +35,8 @@ import {
 } from './updateGame';
 import { isFiniteTruckState, sanitizeDriveInput } from './safety';
 import { createElevation } from './elevation';
+import { createCheckpointSigns } from './checkpointSigns';
+import { routeProgress } from './checkpoints';
 export type DrivingStatus = {
   introducing: boolean;
   position: { x: number; z: number };
@@ -51,6 +53,8 @@ export type DrivingStatus = {
   /** 荷台に残っている荷物と、積んだ数（#15〜#17） */
   cargoRemaining: number;
   cargoTotal: number;
+  /** お家までの道のりのうち、一番先まで進んだ割合（0〜1、checkpoints.ts） */
+  route: number;
 };
 
 export function createScene(
@@ -79,7 +83,8 @@ export function createScene(
   const lapTrack = createLapTrack(course.points, course.roadWidth);
   let lap: LapState,
     raceTime = 0,
-    started = false;
+    started = false,
+    route = 0;
   let physicsTime = 0;
   /** トラックの中心と先端（ゴールは先端がSTARTラインを越えたとき） */
   function truckPoints() {
@@ -118,6 +123,12 @@ export function createScene(
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#dce8e4');
   scene.add(createDeliveryHouse(course));
+  const signs = createCheckpointSigns(
+    course,
+    elevation.heightAt,
+    CARGO_GROUND_Y,
+  );
+  scene.add(signs.group);
   scene.add(group, new THREE.HemisphereLight(0xffffff, 0x647356, 2.5));
   const light = new THREE.DirectionalLight(0xffffff, 2);
   light.position.set(20, 40, 20);
@@ -299,6 +310,7 @@ export function createScene(
     lap = startLap(lapTrack, center, front, DELIVERY_RATIO);
     raceTime = 0;
     started = false;
+    route = 0;
     clearInput();
     syncTruck();
     if (following) follow(0, true);
@@ -423,6 +435,10 @@ export function createScene(
       if (started) raceTime += elapsed;
       const { center, front } = truckPoints();
       lap = updateLap(lapTrack, lap, center, front, DELIVERY_RATIO);
+      // 戻っても減らさない。お家に着いたら道のりは全部
+      route = lap.finished
+        ? 1
+        : Math.max(route, routeProgress(lap.progress, lapTrack.length));
       if (lap.finished) {
         state = { ...state, speed: 0 };
         clearInput();
@@ -507,6 +523,7 @@ export function createScene(
           (active || remote !== null || (started && !lap.finished)),
         time: raceTime,
         finished: lap.finished,
+        route,
       });
       lastStatus = now;
     }
@@ -538,6 +555,7 @@ export function createScene(
         }
       });
       depot.texture.dispose();
+      signs.textures.forEach((texture) => texture.dispose());
       renderer.dispose();
       renderer.domElement.remove();
     },
