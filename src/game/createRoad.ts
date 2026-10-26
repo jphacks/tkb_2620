@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { CourseData } from '../../shared/course';
 
 /** 壁の色に掛ける割合。上を向いた面に当たる光（空2.5＋太陽2×約0.8）の逆数くらい */
-const WALL_LIGHT_BALANCE = 0.28;
+const WALL_LIGHT_BALANCE = 0.22;
 
 /** Builds a closed ribbon from ordered game-space points; no image conversion.
  * heights は各点の道路の高さ（坂、elevation.ts）。省略すると平らな道。
