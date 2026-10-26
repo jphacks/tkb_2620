@@ -201,14 +201,10 @@ export function GameCanvas({
   useEffect(() => {
     info.current = { courseName, courseLength };
   }, [courseName, courseLength]);
-  // 「配送完了！」を2秒見せてから結果画面へ。「配達失敗…」は、配達員が落ち込む演出（約2秒）を
-  // 見届けられるよう少し長く
+  // 「配送完了！」「配達失敗…」は、配達員が喜ぶ・落ち込む演出（約2.2秒）を見届けてから結果画面へ
   useEffect(() => {
     if (!result) return;
-    const timer = window.setTimeout(
-      () => finishRef.current?.(result),
-      deliveryFailed(result) ? 2800 : 2000,
-    );
+    const timer = window.setTimeout(() => finishRef.current?.(result), 2800);
     return () => window.clearTimeout(timer);
   }, [result]);
   useEffect(() => {
@@ -350,8 +346,9 @@ export function GameCanvas({
           </span>
         </div>
       )}
+      {/* 配達員が見えるよう、配送完了・配達失敗とも画面の上のほうに出す */}
       {status.finished && !deliveryFailed(status) && (
-        <div className="goal-overlay" role="status">
+        <div className="goal-overlay goal-top" role="status">
           <div className="delivery-celebration" aria-hidden="true">
             📦 ✓
           </div>
@@ -360,9 +357,9 @@ export function GameCanvas({
           <p className="goal-time">{formatTime(status.time)}</p>
         </div>
       )}
-      {/* 荷物を全部落としてお家に着いたとき。下の配達員が見えるよう、上に寄せて出す */}
+      {/* 荷物を全部落としてお家に着いたとき */}
       {status.finished && deliveryFailed(status) && (
-        <div className="goal-overlay goal-failed" role="status">
+        <div className="goal-overlay goal-top goal-failed" role="status">
           <div className="delivery-failed-mark" aria-hidden="true">
             📦 ✕
           </div>

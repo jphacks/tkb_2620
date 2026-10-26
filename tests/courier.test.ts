@@ -40,3 +40,27 @@ test('演出の時間を過ぎても、不正な時間でも、姿勢は有限�
   for (const t of [-1, 0, 1, COURIER_SECONDS, 10, Number.NaN])
     assert.ok(Object.values(courierPose(t)).every(Number.isFinite), `${t}`);
 });
+
+test('荷物が残っていれば、配達員は両手を挙げて2回跳んで喜ぶ', () => {
+  const walked = courierPose(0.9, 'happy');
+  assert.ok(Math.abs(walked.yaw + Math.PI) < 1e-9, 'カメラのほうを向く');
+  // 1回目・2回目の真ん中で浮いている
+  for (const t of [0.95 + 0.55 * 0.5, 0.95 + 0.55 * 1.5]) {
+    const jump = courierPose(t, 'happy');
+    assert.ok(jump.y > 0.2, `${t}: ${jump.y}`);
+  }
+  const end = courierPose(COURIER_SECONDS, 'happy');
+  assert.equal(end.y, 0, '最後は着地している');
+  // 腕は頭の上へ（下向きから約170°回して、先が上を向く）
+  assert.ok(end.armLeft < -2.5 && end.armRight < -2.5);
+  assert.ok(end.head < 0, '上を向く');
+  assert.ok(end.hip > courierPose(COURIER_SECONDS, 'sad').hip, '立ったまま');
+});
+
+test('喜ぶ演出も、どの時間でも姿勢は有限の値', () => {
+  for (const t of [-1, 0, 1, 1.3, COURIER_SECONDS, 10, Number.NaN])
+    assert.ok(
+      Object.values(courierPose(t, 'happy')).every(Number.isFinite),
+      `${t}`,
+    );
+});

@@ -37,7 +37,12 @@ import { isFiniteTruckState, sanitizeDriveInput } from './safety';
 import { createElevation } from './elevation';
 import { createCheckpointSigns } from './checkpointSigns';
 import { routeProgress } from './checkpoints';
-import { COURIER_SECONDS, courierPose, createCourier } from './courier';
+import {
+  COURIER_SECONDS,
+  courierPose,
+  createCourier,
+  type CourierMood,
+} from './courier';
 export type DrivingStatus = {
   introducing: boolean;
   position: { x: number; z: number };
@@ -142,10 +147,11 @@ export function createScene(
   depot.group.position.set(startPose.x, 0, startPose.z);
   scene.add(depot.group);
   const truck = createTruck();
-  // 荷物を全部落としてお家に着いたら、運転席から配達員が降りてきて落ち込む
+  // お家に着いたら、運転席から配達員が降りてくる。荷物が残っていれば喜び、全部落としていれば落ち込む
   const courier = createCourier();
   truck.group.add(courier.group);
-  let courierTime: number | null = null;
+  let courierTime: number | null = null,
+    courierMood: CourierMood = 'happy';
   // 向きを決めてから、坂に合わせて前後に傾ける
   truck.group.rotation.order = 'YXZ';
   scene.add(truck.group);
@@ -282,7 +288,7 @@ export function createScene(
       state.z,
     ).addScaledVector(forward, 2.5);
     if (courierTime !== null) {
-      // 配達失敗：落ち込む配達員が大きく見えるよう、トラックの右うしろ（配達員の斜め前）へ寄る
+      // お家に着いたら、配達員が大きく見えるよう、トラックの右うしろ（配達員の斜め前）へ寄る
       const side = new THREE.Vector3(
         Math.cos(state.yaw),
         0,
@@ -468,7 +474,9 @@ export function createScene(
       if (lap.finished) {
         state = { ...state, speed: 0 };
         clearInput();
-        if (courierTime === null && cargo.length && !remainingCargo(cargo)) {
+        if (courierTime === null) {
+          courierMood =
+            cargo.length && !remainingCargo(cargo) ? 'sad' : 'happy';
           // 動きを減らす設定では、最後の姿勢だけを見せる
           courierTime = window.matchMedia('(prefers-reduced-motion: reduce)')
             .matches
@@ -481,7 +489,7 @@ export function createScene(
     if (courierTime !== null) {
       if (!document.hidden)
         courierTime = Math.min(COURIER_SECONDS * 2, courierTime + elapsed);
-      courier.apply(courierPose(courierTime));
+      courier.apply(courierPose(courierTime, courierMood));
     }
     cargoView.sync(cargo);
     const signalOn =
