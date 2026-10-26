@@ -252,10 +252,11 @@ export function createRoad(
       geometry.addGroup(part.start, part.count, part.entrance ? 1 : 0),
     );
     const mesh = new THREE.Mesh(geometry, [
-      new THREE.MeshStandardMaterial({
+      // 写真の人の色が光のつやで白く飛ばないよう、壁はつやのないマットな材質にする。
+      // 光の当て方はほかの物と同じで、照り返し（ハイライト）だけをなくす
+      new THREE.MeshLambertMaterial({
         vertexColors: true,
         side: THREE.DoubleSide,
-        roughness: 0.9,
       }),
       entranceMaterial,
     ]);
