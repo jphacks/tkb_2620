@@ -1206,14 +1206,68 @@ button:disabled {
 .hud-cargo-reduced dd {
   color: #ffdf87;
 }
+.hud-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 6px;
+}
 .hud-message {
   display: inline-block;
-  margin: 6px 0 0;
+  margin: 0;
   padding: 5px 10px;
+  border: 1.5px solid transparent;
   border-radius: 8px;
   background: #ffffffed;
   color: #294b37;
   font-size: 12px;
+}
+/* 看板を通過した直後だけ：はんこの赤い枠で、ふだんと同じ場所・同じ大きさ */
+.hud-message.hud-notice {
+  border-color: #c8372d;
+  color: #c8372d;
+  font-weight: 700;
+  animation: hud-notice-in 0.35s ease-out;
+}
+@keyframes hud-notice-in {
+  from {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+/* お家までの道のり：看板で4つに分けた細いバー */
+.hud-route {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #203d30cc;
+  color: #d2dfd4;
+  font-size: 11px;
+}
+.hud-route-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 22px);
+  gap: 3px;
+}
+.hud-route-bar > span {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    #ffdf87 calc(var(--part, 0) * 100%),
+    #ffffff33 0
+  );
+}
+.hud-route-bar > span.done {
+  background: #ffdf87;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-message.hud-notice {
+    animation: none;
+  }
 }
 .app-game .course-toolbar {
   display: grid;

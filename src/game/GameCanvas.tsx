@@ -9,6 +9,7 @@ import type { DeliveryResult } from './score';
 import type { CapturedPerson } from '../capture/capture';
 import { createGameAudio, feedbackEvents, soundSettings } from './feedback';
 import { GameHud } from '../components/GameHud';
+import { CHECKPOINTS, passedCheckpoints } from './checkpoints';
 import { CourseMinimap } from '../components/CourseMinimap';
 export function GameCanvas({
   course,
@@ -93,7 +94,17 @@ export function GameCanvas({
     finished: false,
     cargoRemaining: 0,
     cargoTotal: 0,
+    route: 0,
   });
+  // 看板を通過した直後だけ、左上の知らせを「1/4 通過！」などにする
+  const [notice, setNotice] = useState<string | null>(null);
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    },
+    [],
+  );
   const [mapPosition, setMapPosition] = useState<{
     course: CourseData;
     point: { x: number; z: number };
@@ -157,6 +168,16 @@ export function GameCanvas({
             ? 'collision'
             : 'harsh-acceleration',
       );
+    }
+    const passed = passedCheckpoints(next.route);
+    if (
+      !next.finished &&
+      passed > passedCheckpoints(previousFeedback.current?.route ?? 0)
+    ) {
+      const { label, note } = CHECKPOINTS[passed - 1];
+      setNotice(`${label}！${note}`);
+      if (noticeTimer.current) clearTimeout(noticeTimer.current);
+      noticeTimer.current = setTimeout(() => setNotice(null), 2500);
     }
     previousFeedback.current = next;
     if (next.finished && !resultRef.current) {
@@ -239,6 +260,8 @@ export function GameCanvas({
             cargoRemaining={status.cargoRemaining}
             cargoTotal={status.cargoTotal}
             speed={status.speed}
+            route={status.route}
+            notice={status.finished ? null : notice}
             message={
               status.introducing
                 ? 'コースを見渡しています…'
