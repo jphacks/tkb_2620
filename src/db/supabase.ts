@@ -89,6 +89,46 @@ export async function loadCourse(id: string): Promise<SavedCourse | null> {
 }
 
 /** 遊び始めたことを記録する（プレイ回数と最終プレイ日時、#30 の Memory Score に使う） */
+/** どのコースで遊んだか（遊ばれた回数の記録、play_events） */
+export type PlaySource = 'photo' | 'memory' | 'sample';
+/** どうやって操作したか */
+export type PlayController = 'phones' | 'keyboard';
+
+/** 走り出したことを記録し、記録の番号を返す。DBが使えない・失敗したら null（ゲームは止めない） */
+export async function logPlayStart(
+  courseId: string | null,
+  source: PlaySource,
+  controller: PlayController,
+): Promise<number | null> {
+  if (!isDatabaseConfigured) return null;
+  try {
+    const id = await request<number>('rpc/log_play_start', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_course_id: courseId,
+        p_course_source: source,
+        p_controller: controller,
+      }),
+    });
+    return typeof id === 'number' ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+/** ゴールしたことを記録する。失敗しても何もしない */
+export async function logPlayFinish(id: number | null): Promise<void> {
+  if (id === null || !isDatabaseConfigured) return;
+  try {
+    await request<null>('rpc/log_play_finish', {
+      method: 'POST',
+      body: JSON.stringify({ p_id: id }),
+    });
+  } catch {
+    // 記録できなくても遊びには関係ない
+  }
+}
+
 export async function recordPlay(id: string): Promise<void> {
   await request<null>('rpc/record_play', {
     method: 'POST',
