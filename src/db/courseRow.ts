@@ -10,6 +10,8 @@ export const SAMPLE_COURSE_ID = '00000000-0000-4000-8000-000000000001';
 /** コース名の上限（完成画面と DB の制約に合わせる） */
 export const COURSE_NAME_MAX = 20;
 export const UNNAMED_COURSE = 'なまえのないコース';
+/** コースに一言の上限。思い出のコースのカードの吹き出しに2行で収まる長さ */
+export const COURSE_COMMENT_MAX = 30;
 
 /** courses テーブルの1行（読むとき） */
 export type CourseRow = {
@@ -20,6 +22,8 @@ export type CourseRow = {
   theme_color: string;
   road_width: number;
   capture_mode: string;
+  /** コースに一言（どんなときの写真か）。書かなければ null */
+  comment?: string | null;
   play_count: number;
   created_at: string;
   last_played_at: string | null;
@@ -29,6 +33,8 @@ export type CourseRow = {
 export type SavedCourse = {
   id: string;
   name: string;
+  /** コースに一言。なければ null */
+  comment: string | null;
   data: CourseData;
   playCount: number;
   createdAt: string;
@@ -41,10 +47,21 @@ export function normalizeCourseName(name: string): string {
   return trimmed || UNNAMED_COURSE;
 }
 
+/** 一言の前後の空白と改行を除き、30文字に切る。空なら null（書かなかった） */
+export function normalizeCourseComment(comment?: string | null): string | null {
+  const trimmed = [...(comment ?? '').replace(/\s+/g, ' ').trim()]
+    .slice(0, COURSE_COMMENT_MAX)
+    .join('');
+  return trimmed || null;
+}
+
 /** 保存するときに送る列。id・回数・日時・status は DB が決める。元の写真は送らない */
-export function toInsertRow(data: CourseData, name: string) {
+export function toInsertRow(data: CourseData, name: string, comment?: string) {
+  const note = normalizeCourseComment(comment);
   return {
     name: normalizeCourseName(name),
+    // 一言は書いたときだけ送る
+    ...(note ? { comment: note } : {}),
     course_points: data.points.map(({ x, z }) => ({ x, z })),
     wall_color_stops: data.wallColorStops.map(({ progress, color }) => ({
       progress,
@@ -70,6 +87,7 @@ export function fromRow(row: CourseRow): SavedCourse | null {
   return {
     id: row.id,
     name: row.name,
+    comment: normalizeCourseComment(row.comment),
     data,
     playCount: row.play_count ?? 0,
     createdAt: row.created_at,

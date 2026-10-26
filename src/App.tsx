@@ -279,7 +279,7 @@ export default function App() {
             <CourseReadyPage
               key={captured.capturedAt}
               captured={captured}
-              onPlay={(data, name) => {
+              onPlay={(data, name, comment) => {
                 const problem = validateCourseData(data);
                 if (problem) {
                   backToCapture(
@@ -294,7 +294,7 @@ export default function App() {
                 firstRunCounted.current = isDatabaseConfigured;
                 // 遊び始めると同時に裏で保存する（#25）。失敗してもゲームは続ける
                 if (isDatabaseConfigured)
-                  saveCourse(data, name)
+                  saveCourse(data, name, comment)
                     .then((saved) => {
                       setCourse((current) =>
                         current?.data === data

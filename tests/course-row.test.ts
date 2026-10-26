@@ -4,6 +4,7 @@ import {
   entersTopRankings,
   fromRow,
   groupTopRankings,
+  normalizeCourseComment,
   normalizeCourseName,
   normalizeDisplayName,
   toInsertRow,
@@ -141,4 +142,22 @@ test('a result enters the TOP3 only when it beats the third place (#29)', () => 
   assert.equal(entersTopRankings(top, 70, 69_000), true);
   assert.equal(entersTopRankings(top, 70, 70_000), false);
   assert.equal(entersTopRankings(top, 69, 10_000), false);
+});
+
+test('a one-line comment about the photo is optional, trimmed, and at most 30 characters', () => {
+  assert.equal(normalizeCourseComment(''), null);
+  assert.equal(normalizeCourseComment('   '), null);
+  assert.equal(normalizeCourseComment(undefined), null);
+  assert.equal(normalizeCourseComment('  笑顔で\nピース  '), '笑顔で ピース');
+  assert.equal([...normalizeCourseComment('あ'.repeat(40))!].length, 30);
+  // 書かなければ comment の列は送らない
+  assert.equal('comment' in toInsertRow(course, 'x', '  '), false);
+  assert.equal(
+    toInsertRow(course, 'x', '笑顔でピース').comment,
+    '笑顔でピース',
+  );
+  const saved = fromRow(row({ comment: '笑顔でピース' }));
+  assert.equal(saved?.comment, '笑顔でピース');
+  assert.equal(fromRow(row({ comment: null }))?.comment, null);
+  assert.equal(fromRow(row({}))?.comment, null);
 });

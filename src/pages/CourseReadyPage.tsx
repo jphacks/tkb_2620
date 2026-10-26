@@ -4,6 +4,7 @@ import type { CapturedPerson } from '../capture/capture';
 import { useMapPhoto } from '../capture/useMapPhoto';
 import type { MapPhoto } from '../capture/useMapPhoto';
 import { buildCourse } from '../image-processing/generateCourse';
+import { COURSE_COMMENT_MAX } from '../db/courseRow';
 
 /** Shown at least this long so the generating animation reads as a step, not a flicker. */
 const MIN_GENERATING_MS = 1600;
@@ -12,7 +13,8 @@ export const MAX_COURSE_NAME_LENGTH = 20;
 
 type Props = {
   captured: CapturedPerson;
-  onPlay: (course: CourseData, name: string) => void;
+  /** comment：コースに一言（任意、空なら空文字） */
+  onPlay: (course: CourseData, name: string, comment: string) => void;
   onRetake: () => void;
   /** コースを作れなかったとき。撮影画面へ戻す（#22） */
   onFailed?: (message: string) => void;
@@ -29,6 +31,7 @@ export default function CourseReadyPage({
   const [warning, setWarning] = useState('');
   const [error, setError] = useState('');
   const [name, setName] = useState('');
+  const [comment, setComment] = useState('');
   useEffect(() => {
     // The parent remounts this page per photo, so state starts empty each time.
     let cancelled = false;
@@ -126,7 +129,7 @@ export default function CourseReadyPage({
         className="course-name"
         onSubmit={(event) => {
           event.preventDefault();
-          onPlay(course, trimmed || DEFAULT_COURSE_NAME);
+          onPlay(course, trimmed || DEFAULT_COURSE_NAME, comment.trim());
         }}
       >
         <label htmlFor="course-name">コース名</label>
@@ -138,10 +141,24 @@ export default function CourseReadyPage({
           autoComplete="off"
           onChange={(event) => setName(event.target.value)}
         />
+        <small>{MAX_COURSE_NAME_LENGTH}文字まで</small>
+        <label htmlFor="course-comment">
+          コースに一言<span className="optional">（なくてもOK）</span>
+        </label>
+        <input
+          id="course-comment"
+          value={comment}
+          maxLength={COURSE_COMMENT_MAX}
+          placeholder="例：笑顔でピース"
+          autoComplete="off"
+          onChange={(event) => setComment(event.target.value)}
+        />
         <small>
-          {MAX_COURSE_NAME_LENGTH}
-          文字まで。コース名とコースの形（シルエット）は、ほかの人の「思い出のコース」にも公開されます。写真は公開されません。
+          {[...comment].length}/{COURSE_COMMENT_MAX}文字
         </small>
+        <p className="course-public-note">
+          コース名・一言・コースの形は、ほかの人にも公開されます（写真は公開されません）。
+        </p>
         <div className="capture-actions">
           <button className="capture-primary" type="submit">
             このルートで出発準備へ

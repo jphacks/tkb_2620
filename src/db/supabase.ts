@@ -29,7 +29,7 @@ const IS_LEGACY_JWT_KEY = API_KEY.startsWith('eyJ');
 export const isDatabaseConfigured = Boolean(URL_BASE && API_KEY);
 
 const COURSE_COLUMNS =
-  'id,name,course_points,wall_color_stops,theme_color,road_width,capture_mode,play_count,created_at,last_played_at';
+  'id,name,comment,course_points,wall_color_stops,theme_color,road_width,capture_mode,play_count,created_at,last_played_at';
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!isDatabaseConfigured)
@@ -60,11 +60,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 export async function saveCourse(
   data: CourseData,
   name: string,
+  comment?: string,
 ): Promise<SavedCourse> {
   const rows = await request<CourseRow[]>(`courses?select=${COURSE_COLUMNS}`, {
     method: 'POST',
     headers: { Prefer: 'return=representation' },
-    body: JSON.stringify(toInsertRow(data, name)),
+    body: JSON.stringify(toInsertRow(data, name, comment)),
   });
   const saved = rows?.[0] && fromRow(rows[0]);
   if (!saved) throw new Error('保存したコースを読み直せませんでした。');

@@ -34,7 +34,7 @@
 
 テーブル・関数・権限は `supabase/migrations/` のSQL（「コースのテーブル」・「ランキング」）。SupabaseのSQL Editorに、ファイル名の順（`20261024000000_courses_rankings.sql` → `20261024010000_validate_and_sample_course.sql`）に貼って実行する（再実行しても壊れない）。
 
-- `courses`：上の列に加え `id`・`name`（20文字まで）・`status`（`active`/`archived`）・`play_count`・`created_at`・`last_played_at`。Memory Score（「思い出度」）は `last_played_at` から必要なときに計算し、保存しない。
+- `courses`：上の列に加え `id`・`name`（20文字まで）・`comment`（コースに一言。どんなときの写真か。任意で30文字まで、書かなければ null。`20261026000000_course_comment.sql`）・`status`（`active`/`archived`）・`play_count`・`created_at`・`last_played_at`。Memory Score（「思い出度」）は `last_played_at` から必要なときに計算し、保存しない。
 - 保存するコースの中身は、ゲーム側の検査（`src/game/safety.ts` の `validateCourseData`、「エラー処理」）と同じ基準でDBも検査する：点は `{x: 数, z: 数}` が3〜5000個、壁の色は1つ以上で `{progress: 0〜1, color: '#RRGGBB'}`、テーマ色は `#RRGGBB`、道幅は0より大きい。
 - `rankings`：`course_id`・`display_name`（2人で1つのチーム名、16文字まで。`20261025000000_team_name.sql`）・`score`（0〜100）・`clear_time_ms`・`remaining_cargo`・`cargo_total`（積んだ数。残り ≤ 積んだ数）・`created_at`。コースごとにTOP3だけ残す。分けない（2人・3人で同じランキング）。
 - サンプルの楕円コースは、ID `00000000-0000-4000-8000-000000000001`・名前「サンプルコース（楕円）」で常に入れておく（`sampleCourse.ts` と同じ形）。写真なしで遊んだときもこのIDでランキングを付ける。古くなっても消さない。
