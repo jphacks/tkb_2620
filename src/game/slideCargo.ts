@@ -17,6 +17,8 @@ export type TruckMotion = {
   acceleration: number;
   /** Positive yaw turns left; bed-local +x is left. */
   yawRate: number;
+  /** 坂の急さ（トラックの向きに上りが正）。上り坂では荷物が後ろへ引かれる */
+  grade?: number;
 };
 
 /** Gameplay assistance: positive acceleration only; smooth transition by speed. */
@@ -51,7 +53,10 @@ export function slideCargo(
   const { step: dt, gravity, staticFriction, kineticFriction } = CARGO_PHYSICS;
   const force = {
     x: -motion.speed * motion.yawRate,
-    z: -motion.acceleration * cargoLaunchScale(motion),
+    // 発進の補助（cargoLaunchScale）は加速の分だけ。坂の重力には補助をかけない
+    z:
+      -motion.acceleration * cargoLaunchScale(motion) -
+      gravity * (motion.grade ?? 0),
   };
   const magnitude = Math.hypot(force.x, force.z);
   const next: CargoItem[] = items.map((item) => {

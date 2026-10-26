@@ -1,8 +1,15 @@
 import * as THREE from 'three';
 import type { CourseData } from '../../shared/course';
 
-/** Builds a closed ribbon from ordered game-space points; no image conversion. */
-export function createRoad(course: CourseData) {
+/** Builds a closed ribbon from ordered game-space points; no image conversion.
+ * heights は各点の道路の高さ（坂、elevation.ts）。省略すると平らな道。
+ * 外側の壁は地面（groundY）まで下ろし、高いところでは道を支える土手に見せる。
+ */
+export function createRoad(
+  course: CourseData,
+  heights: readonly number[] = course.points.map(() => 0),
+  groundY = 0,
+) {
   const { points, roadWidth, wallColorStops } = course;
   if (
     points.length < 3 ||
@@ -69,9 +76,10 @@ export function createRoad(course: CourseData) {
     if (divisor < 0.25)
       throw new Error('カーブが急すぎます。輪郭の補正が必要です。');
     miter.multiplyScalar(roadWidth / 2 / divisor);
+    const y = heights[i] ?? 0;
     return [
-      new THREE.Vector3(p.x + miter.x, 0, p.z + miter.y),
-      new THREE.Vector3(p.x - miter.x, 0, p.z - miter.y),
+      new THREE.Vector3(p.x + miter.x, y, p.z + miter.y),
+      new THREE.Vector3(p.x - miter.x, y, p.z - miter.y),
     ];
   });
   const group = new THREE.Group();
@@ -84,7 +92,8 @@ export function createRoad(course: CourseData) {
     for (let i = 0; i <= count; i++) {
       const edge = edges[i % count];
       const a = edge[wallSide ?? 0];
-      const b = wallSide === undefined ? edge[1] : a.clone().setY(wallHeight);
+      const b =
+        wallSide === undefined ? edge[1] : a.clone().setY(a.y + wallHeight);
       positions.push(a.x, a.y, a.z, b.x, b.y, b.z);
       const c = colorAt(distances[i] / length);
       colors.push(c.r, c.g, c.b, c.r, c.g, c.b);
@@ -148,9 +157,12 @@ export function createRoad(course: CourseData) {
       ).multiplyScalar(wallThickness / (roadWidth / 2));
       return [
         edge.clone(),
-        edge.clone().setY(wallHeight),
-        edge.clone().add(outward).setY(wallHeight),
-        edge.clone().add(outward),
+        edge.clone().setY(edge.y + wallHeight),
+        edge
+          .clone()
+          .add(outward)
+          .setY(edge.y + wallHeight),
+        edge.clone().add(outward).setY(Math.min(edge.y, groundY)),
       ];
     }
     const wallGroups: { start: number; count: number; entrance: boolean }[] =
