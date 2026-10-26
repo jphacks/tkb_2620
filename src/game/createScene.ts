@@ -37,6 +37,7 @@ import { isFiniteTruckState, sanitizeDriveInput } from './safety';
 import { createElevation } from './elevation';
 import { createCheckpointSigns } from './checkpointSigns';
 import { routeProgress } from './checkpoints';
+import { COURIER_SECONDS, courierPose, createCourier } from './courier';
 export type DrivingStatus = {
   introducing: boolean;
   position: { x: number; z: number };
@@ -141,6 +142,10 @@ export function createScene(
   depot.group.position.set(startPose.x, 0, startPose.z);
   scene.add(depot.group);
   const truck = createTruck();
+  // 荷物を全部落としてお家に着いたら、運転席から配達員が降りてきて落ち込む
+  const courier = createCourier();
+  truck.group.add(courier.group);
+  let courierTime: number | null = null;
   // 向きを決めてから、坂に合わせて前後に傾ける
   truck.group.rotation.order = 'YXZ';
   scene.add(truck.group);
@@ -276,7 +281,26 @@ export function createScene(
       height + 0.8,
       state.z,
     ).addScaledVector(forward, 2.5);
-    const weight = snap ? 1 : 1 - Math.exp(-6 * dt);
+    if (courierTime !== null) {
+      // 配達失敗：落ち込む配達員が大きく見えるよう、トラックの右うしろ（配達員の斜め前）へ寄る
+      const side = new THREE.Vector3(
+        Math.cos(state.yaw),
+        0,
+        -Math.sin(state.yaw),
+      );
+      // 上に出る「配達失敗…」と重ならないよう、少し上を見て配達員を画面の下のほうに置く
+      desired
+        .set(state.x, height + 2.2, state.z)
+        .addScaledVector(side, -3.2)
+        .addScaledVector(forward, -3.3);
+      target
+        .set(state.x, height + 1.25, state.z)
+        .addScaledVector(side, -1.2)
+        .addScaledVector(forward, -0.3);
+    }
+    const weight = snap
+      ? 1
+      : 1 - Math.exp((courierTime !== null ? -3 : -6) * dt);
     camera.position.lerp(desired, weight);
     lookAt.lerp(target, weight);
     camera.lookAt(lookAt);
@@ -311,6 +335,8 @@ export function createScene(
     raceTime = 0;
     started = false;
     route = 0;
+    courierTime = null;
+    courier.show(false);
     clearInput();
     syncTruck();
     if (following) follow(0, true);
@@ -442,8 +468,21 @@ export function createScene(
       if (lap.finished) {
         state = { ...state, speed: 0 };
         clearInput();
+        if (courierTime === null && cargo.length && !remainingCargo(cargo)) {
+          // 動きを減らす設定では、最後の姿勢だけを見せる
+          courierTime = window.matchMedia('(prefers-reduced-motion: reduce)')
+            .matches
+            ? COURIER_SECONDS
+            : 0;
+          courier.show(true);
+        }
       }
     } else physicsTime = 0;
+    if (courierTime !== null) {
+      if (!document.hidden)
+        courierTime = Math.min(COURIER_SECONDS * 2, courierTime + elapsed);
+      courier.apply(courierPose(courierTime));
+    }
     cargoView.sync(cargo);
     const signalOn =
       introducing &&

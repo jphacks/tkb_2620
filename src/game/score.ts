@@ -17,6 +17,14 @@ export type DeliveryResult = {
   finishedAt: number;
 };
 
+/** 積荷を全部落としてお家に着いた（「配達失敗…」）。積荷を数えていないときは失敗にしない */
+export function deliveryFailed(result: {
+  cargoRemaining: number;
+  cargoTotal: number;
+}) {
+  return result.cargoTotal > 0 && result.cargoRemaining <= 0;
+}
+
 /** 基準タイムの速さ。最高速（18）の2/3で一周した時間を満点の目安にする。#27で調整 */
 export const PAR_SPEED = 12;
 export const TIME_POINTS = 50;
