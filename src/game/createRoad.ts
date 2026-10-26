@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import type { CourseData } from '../../shared/course';
 
+/** 壁の色に掛ける割合。上を向いた面に当たる光（空2.5＋太陽2×約0.8）の逆数くらい */
+const WALL_LIGHT_BALANCE = 0.22;
+
 /** Builds a closed ribbon from ordered game-space points; no image conversion.
  * heights は各点の道路の高さ（坂、elevation.ts）。省略すると平らな道。
  * 外側の壁は地面（groundY）まで下ろし、高いところでは道を支える土手に見せる。
@@ -252,10 +255,19 @@ export function createRoad(
       geometry.addGroup(part.start, part.count, part.entrance ? 1 : 0),
     );
     const mesh = new THREE.Mesh(geometry, [
-      new THREE.MeshStandardMaterial({
+      // 写真の人の色が白く飛ばないよう、壁はつやのないマットな材質にする。
+      // 空と太陽の光を合わせると、上を向いた面は色の約4倍の明るさになり、明るい色ほど
+      // 白っぽく飛ぶ。光はほかの物と同じまま、壁の色だけ光の分を割り引いておき、
+      // いちばん目に入る壁の上の面が写真の色に近く見えるようにする
+      new THREE.MeshLambertMaterial({
         vertexColors: true,
         side: THREE.DoubleSide,
-        roughness: 0.9,
+        color: new THREE.Color().setRGB(
+          WALL_LIGHT_BALANCE,
+          WALL_LIGHT_BALANCE,
+          WALL_LIGHT_BALANCE,
+          THREE.LinearSRGBColorSpace,
+        ),
       }),
       entranceMaterial,
     ]);
