@@ -34,6 +34,7 @@ import {
   type WallSegment,
 } from './updateGame';
 import { isFiniteTruckState, sanitizeDriveInput } from './safety';
+import { createElevation } from './elevation';
 export type DrivingStatus = {
   introducing: boolean;
   position: { x: number; z: number };
@@ -61,8 +62,13 @@ export function createScene(
   /** true の間はトラックを止め、タイムも進めない（スマホの通信切断など、#22） */
   isPaused: () => boolean = () => false,
 ) {
-  const { group, edges, setGateAngle, entranceConnections } =
-    createRoad(course);
+  // 写真の色の明るさでつける坂。STARTとお家のまわりは高さ0（elevation.ts）
+  const elevation = createElevation(course);
+  const { group, edges, setGateAngle, entranceConnections } = createRoad(
+    course,
+    elevation.pointHeights,
+    CARGO_GROUND_Y,
+  );
   const walls: WallSegment[] = [];
   for (let i = 0; i < edges.length; i++)
     for (const side of [0, 1])
@@ -86,6 +92,27 @@ export function createScene(
       },
     };
   }
+  /** 中心線に沿った位置での、道路の高さと、トラックの向きでの坂の急さ */
+  function roadAt(p: { x: number; z: number; yaw: number }, around?: number) {
+    const hit = locate(lapTrack, p, around);
+    const a = lapTrack.points[hit.segment],
+      b = lapTrack.points[(hit.segment + 1) % lapTrack.points.length];
+    const length = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+    const forward = { x: (b.x - a.x) / length, z: (b.z - a.z) / length };
+    const along = Math.sin(p.yaw) * forward.x + Math.cos(p.yaw) * forward.z;
+    return {
+      forward,
+      height: elevation.heightAt(hit.position),
+      grade: elevation.gradeAt(hit.position) * along,
+    };
+  }
+  /** 落ちた荷物が着く高さ：道の上なら道路の高さ、道の外なら地面 */
+  function groundAt(x: number, z: number) {
+    const hit = locate(lapTrack, { x, z });
+    return hit.distance <= course.roadWidth * 0.62
+      ? elevation.heightAt(hit.position)
+      : CARGO_GROUND_Y;
+  }
   if (hitsWall(state, walls))
     throw new Error('START周辺にトラックを配置する幅がありません。');
   const scene = new THREE.Scene();
@@ -103,6 +130,8 @@ export function createScene(
   depot.group.position.set(startPose.x, 0, startPose.z);
   scene.add(depot.group);
   const truck = createTruck();
+  // 向きを決めてから、坂に合わせて前後に傾ける
+  truck.group.rotation.order = 'YXZ';
   scene.add(truck.group);
   // 荷物はトラックの子：荷台ローカル座標で管理し、トラックと一緒に動く（#15）
   let cargo = createCargoLayout();
@@ -211,9 +240,12 @@ export function createScene(
       const pose = departureWorld(introElapsed);
       truck.group.position.copy(pose.position);
       truck.group.rotation.y = pose.yaw;
+      truck.group.rotation.x = 0;
     } else {
-      truck.group.position.set(state.x, 0, state.z);
+      const road = roadAt(state, lap?.segment);
+      truck.group.position.set(state.x, road.height, state.z);
       truck.group.rotation.y = state.yaw;
+      truck.group.rotation.x = -Math.atan(road.grade);
     }
   }
   function follow(dt: number, snap = false) {
@@ -222,14 +254,17 @@ export function createScene(
       0,
       Math.cos(state.yaw),
     );
-    const desired = new THREE.Vector3(state.x, 3.2, state.z).addScaledVector(
-      forward,
-      -5,
-    );
-    const target = new THREE.Vector3(state.x, 0.8, state.z).addScaledVector(
-      forward,
-      2.5,
-    );
+    const height = roadAt(state, lap?.segment).height;
+    const desired = new THREE.Vector3(
+      state.x,
+      height + 3.2,
+      state.z,
+    ).addScaledVector(forward, -5);
+    const target = new THREE.Vector3(
+      state.x,
+      height + 0.8,
+      state.z,
+    ).addScaledVector(forward, 2.5);
     const weight = snap ? 1 : 1 - Math.exp(-6 * dt);
     camera.position.lerp(desired, weight);
     lookAt.lerp(target, weight);
@@ -352,11 +387,7 @@ export function createScene(
       while (physicsTime + 1e-10 >= CARGO_PHYSICS.step) {
         physicsTime -= CARGO_PHYSICS.step;
         const before = state;
-        const segment = locate(lapTrack, state, lap.segment).segment;
-        const a = lapTrack.points[segment],
-          b = lapTrack.points[(segment + 1) % lapTrack.points.length];
-        const length = Math.hypot(b.x - a.x, b.z - a.z) || 1;
-        const forward = { x: (b.x - a.x) / length, z: (b.z - a.z) / length };
+        const { forward, grade } = roadAt(state, lap.segment);
         state = updateGame(
           state,
           {
@@ -370,13 +401,19 @@ export function createScene(
           CARGO_PHYSICS.step,
           walls,
           forward,
+          grade,
         );
         cargo = slideCargo(cargo, {
           speed: (before.speed + state.speed) / 2,
           acceleration: (state.speed - before.speed) / CARGO_PHYSICS.step,
           yawRate: (state.yaw - before.yaw) / CARGO_PHYSICS.step,
+          grade,
         });
-        cargo = updateCargoFalls(cargo, state);
+        cargo = updateCargoFalls(
+          cargo,
+          { ...state, y: roadAt(state, lap.segment).height },
+          groundAt,
+        );
       }
       // それでも状態が壊れていたらSTARTからやり直す（#22）
       if (!isFiniteTruckState(state)) resetTruck();

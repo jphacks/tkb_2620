@@ -11,10 +11,14 @@ export function isOutsideBed(position: { x: number; z: number }) {
   );
 }
 
-/** Pure world-space simulation, independent of Three.js and later truck motion. */
+/** Pure world-space simulation, independent of Three.js and later truck motion.
+ * 坂のあるコースでは、truck.y にトラックのいる道路の高さを、groundAt に落ちた場所の
+ * 高さ（道の上なら道路の高さ、道の外なら地面）を渡す。省略すると平らな地面。
+ */
 export function updateCargoFalls(
   items: readonly CargoItem[],
-  truck: { x: number; z: number; yaw: number; speed: number },
+  truck: { x: number; z: number; yaw: number; speed: number; y?: number },
+  groundAt: (x: number, z: number) => number = () => CARGO_GROUND_Y,
 ): CargoItem[] {
   const dt = CARGO_PHYSICS.step;
   const next: CargoItem[] = items.map((item) => {
@@ -40,9 +44,12 @@ export function updateCargoFalls(
         z: item.fall.position.z + velocity.z * dt,
       };
       const elapsed = item.fall.elapsed + dt;
-      const landed = position.y <= CARGO_LANDING_Y;
+      const landing =
+        groundAt(position.x, position.z) + (CARGO_LANDING_Y - CARGO_GROUND_Y);
+      const landed = position.y <= landing;
       if (landed) {
-        position.y = CARGO_LANDING_Y;
+        // 隣の高い道の土手に入っても、上へ飛び移らせない
+        position.y = Math.min(landing, item.fall.position.y);
         velocity.x = velocity.y = velocity.z = 0;
       }
       return {
@@ -65,7 +72,7 @@ export function updateCargoFalls(
         },
         position: {
           x: truck.x + local.x * cos + local.z * sin,
-          y: local.y + CARGO.size / 2 + (item.lift ?? 0),
+          y: (truck.y ?? 0) + local.y + CARGO.size / 2 + (item.lift ?? 0),
           z: truck.z - local.x * sin + local.z * cos,
         },
         velocity: {

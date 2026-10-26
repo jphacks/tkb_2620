@@ -144,6 +144,9 @@ function recoverWallContact(
   return null;
 }
 
+/** 坂の重力による加速（上り坂で減速、下り坂で加速）。grade はトラックの向きに上りが正 */
+export const GRAVITY = 9.8;
+
 /** Small fixed substeps prevent a fast vehicle from tunnelling through a wall. */
 export function updateGame(
   state: TruckState,
@@ -151,7 +154,9 @@ export function updateGame(
   elapsed: number,
   walls: WallSegment[],
   forward?: CoursePoint,
+  grade = 0,
 ): TruckState {
+  const slope = Number.isFinite(grade) ? grade : 0;
   let next = { ...state, collided: false };
   let remaining = Math.max(
     0,
@@ -174,11 +179,13 @@ export function updateGame(
         ? Math.min(brake, next.brakePressure + VEHICLE.brakeRise * dt)
         : Math.max(brake, next.brakePressure - VEHICLE.brakeRelease * dt);
     next.brakePressure = pressure;
-    // 力のつり合い：エンジン − 走行抵抗 − ブレーキ。踏み込み量に見合った速さで自然に頭打ちになる
+    // 力のつり合い：エンジン − 走行抵抗 − ブレーキ − 坂の重力。踏み込み量に見合った速さで自然に頭打ちになる
+    // 坂の角度は小さい（7%まで）ので、重力の坂に沿った分は GRAVITY×grade で近似する
     const accel =
       driveAcceleration(next.speed, throttle) -
       dragDeceleration(next.speed) -
-      VEHICLE.brakeDeceleration * pressure;
+      VEHICLE.brakeDeceleration * pressure -
+      GRAVITY * slope;
     let speed = next.speed + accel * dt;
     // クリープ現象：ペダルを離していれば、ほんの少しだけ前へ進む（ブレーキで止まる）
     if (brake === 0 && pressure === 0 && speed < VEHICLE.creepSpeed)
