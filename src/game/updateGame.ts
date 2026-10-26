@@ -21,6 +21,28 @@ export type TruckState = {
   /** ブレーキの効き（0〜1）。踏むとじわっと上がり、離すと素早く抜ける */
   brakePressure: number;
   wrongWay?: boolean;
+  /** 壁に当たって跳ね返る速さ（ワールド座標、m/s）。少しずつ弱まる（BOUNCE） */
+  knockX?: number;
+  knockZ?: number;
+};
+
+/** 壁に当たったときの跳ね返り。壁から押し戻し、後輪などが壁に引っかかったままにならないようにする。
+ * 跳ね返りはコースの進む向きと逆には動かさない（逆走させない）。
+ */
+export const BOUNCE = {
+  /** 壁へ向かう速さのうち、跳ね返る割合 */
+  restitution: 0.5,
+  /** 壁に触れたら、少なくともこの速さで壁から離す */
+  minPop: 0.8,
+  /** 跳ね返る速さの上限 */
+  maxSpeed: 6,
+  /** 跳ね返る速さが半分になるまでの秒数 */
+  halfLife: 0.22,
+  /** 斜めに当たったとき、車の向きを壁に沿う向きへ近づける割合と上限（ラジアン） */
+  turnRatio: 0.5,
+  maxTurn: 0.3,
+  /** この速さ（m/s）で壁へ向かっていたら、向きを目いっぱい変える */
+  fullTurnSpeed: 4,
 };
 export function initialTruckState(course: CourseData): TruckState {
   const [p, next] = course.points;
@@ -147,6 +169,77 @@ function recoverWallContact(
 /** 坂の重力による加速（上り坂で減速、下り坂で加速）。grade はトラックの向きに上りが正 */
 export const GRAVITY = 9.8;
 
+/** コースの進む向きと逆の成分を取り除く（逆走させない） */
+function withoutBackward(x: number, z: number, forward?: CoursePoint) {
+  if (!forward) return { x, z };
+  const along = x * forward.x + z * forward.z;
+  return along < 0
+    ? { x: x - along * forward.x, z: z - along * forward.z }
+    : { x, z };
+}
+
+/** 当たった壁から離れる向き（もとの位置の側）と、その向きに跳ね返す速さ */
+function bounceOff(
+  previous: TruckState,
+  candidate: TruckState,
+  walls: WallSegment[],
+  knock: { x: number; z: number },
+  forward?: CoursePoint,
+) {
+  let nx = 0,
+    nz = 0;
+  for (const wall of walls) {
+    if (!hitsWall(candidate, [wall])) continue;
+    const dx = wall.b.x - wall.a.x,
+      dz = wall.b.z - wall.a.z,
+      length = Math.hypot(dx, dz);
+    if (length < 1e-9) continue;
+    let wx = -dz / length,
+      wz = dx / length;
+    if ((previous.x - wall.a.x) * wx + (previous.z - wall.a.z) * wz < 0) {
+      wx = -wx;
+      wz = -wz;
+    }
+    nx += wx;
+    nz += wz;
+  }
+  const length = Math.hypot(nx, nz);
+  if (length < 1e-9) return { ...knock, turn: 0 };
+  nx /= length;
+  nz /= length;
+  // 壁へ向かっていた速さ（トラックの前進と、いまの跳ね返り）
+  const heading = Math.sin(candidate.yaw) * nx + Math.cos(candidate.yaw) * nz;
+  const knockInto = knock.x * nx + knock.z * nz;
+  const into =
+    Math.max(0, -heading) * candidate.speed + Math.max(0, -knockInto);
+  const pop = Math.min(
+    BOUNCE.maxSpeed,
+    Math.max(BOUNCE.minPop, into * BOUNCE.restitution),
+  );
+  // 斜めに当たったら、車の向きを、いまの向きに近いほうの壁沿いの向きへ少し近づける
+  const along = Math.sin(candidate.yaw) * -nz + Math.cos(candidate.yaw) * nx;
+  const tangent = along >= 0 ? Math.atan2(-nz, nx) : Math.atan2(nz, -nx);
+  let angle = tangent - candidate.yaw;
+  angle = Math.atan2(Math.sin(angle), Math.cos(angle));
+  const strength = Math.min(
+    1,
+    (Math.max(0, -heading) * candidate.speed) / BOUNCE.fullTurnSpeed,
+  );
+  const turn =
+    Math.sign(angle) *
+    Math.min(BOUNCE.maxTurn, Math.abs(angle) * BOUNCE.turnRatio) *
+    strength;
+  // 壁に沿う向きの跳ね返りは残し、壁の向きだけを入れ替える
+  return {
+    ...withoutBackward(
+      knock.x - knockInto * nx + pop * nx,
+      knock.z - knockInto * nz + pop * nz,
+      forward,
+    ),
+    turn,
+  };
+}
+
 /** Small fixed substeps prevent a fast vehicle from tunnelling through a wall. */
 export function updateGame(
   state: TruckState,
@@ -207,22 +300,32 @@ export function updateGame(
         : speed;
     const yaw =
       next.yaw + ((next.steering * turningSpeed) / VEHICLE.minTurnRadius) * dt;
+    // 壁からの跳ね返りは少しずつ弱める。進む向きと逆には動かさない
+    const decay = 0.5 ** (dt / BOUNCE.halfLife);
+    const knock = withoutBackward(
+      Number.isFinite(next.knockX) ? next.knockX! * decay : 0,
+      Number.isFinite(next.knockZ) ? next.knockZ! * decay : 0,
+      forward,
+    );
     const candidate = {
       ...next,
       yaw,
       speed,
-      x: next.x + Math.sin(yaw) * speed * dt,
-      z: next.z + Math.cos(yaw) * speed * dt,
+      x: next.x + Math.sin(yaw) * speed * dt + knock.x * dt,
+      z: next.z + Math.cos(yaw) * speed * dt + knock.z * dt,
+      knockX: knock.x,
+      knockZ: knock.z,
     };
     candidate.wrongWay = forward
       ? Math.sin(yaw) * forward.x + Math.cos(yaw) * forward.z < -1e-8
       : false;
     if (candidate.wrongWay) {
-      candidate.x = next.x;
-      candidate.z = next.z;
+      candidate.x = next.x + knock.x * dt;
+      candidate.z = next.z + knock.z * dt;
       candidate.speed = 0;
     }
     if (hitsWall(candidate, walls)) {
+      const bounce = bounceOff(next, candidate, walls, knock, forward);
       const recovered = recoverWallContact(next, candidate, walls, dt);
       if (recovered) {
         const backwards =
@@ -244,6 +347,16 @@ export function updateGame(
             : rotationOnly;
         }
       } else next = { ...next, speed: 0, collided: true };
+      next = { ...next, knockX: bounce.x, knockZ: bounce.z };
+      // 向きを変えても壁に入らず、逆向きにもならないときだけ、壁に沿う向きへ曲げる
+      if (bounce.turn) {
+        const turned = { ...next, yaw: next.yaw + bounce.turn };
+        const reversed =
+          forward &&
+          Math.sin(turned.yaw) * forward.x + Math.cos(turned.yaw) * forward.z <
+            -1e-8;
+        if (!reversed && !hitsWall(turned, walls)) next = turned;
+      }
       continue;
     }
     candidate.collided = next.collided;
