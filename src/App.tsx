@@ -11,7 +11,14 @@ import { useRemoteInput } from './socket/useRemoteInput';
 import type { ControllerRole } from '../shared/socket';
 import type { CourseData } from '../shared/course';
 import CourseReadyPage from './pages/CourseReadyPage';
-import { isDatabaseConfigured, recordPlay, saveCourse } from './db/supabase';
+import {
+  isDatabaseConfigured,
+  logPlayFinish,
+  logPlayStart,
+  recordPlay,
+  saveCourse,
+  type PlaySource,
+} from './db/supabase';
 import { SAMPLE_COURSE_ID } from './db/courseRow';
 import HomePage from './pages/HomePage';
 import CapturePage from './pages/CapturePage';
@@ -77,10 +84,18 @@ export default function App() {
   // 写真から作ったコースの1回目は、保存と一緒に数える（保存が終わるまで id がないため）
   const firstRunCounted = useRef(false);
   /** 走り始める。プレイ回数と最終プレイ日時は、実際に走り出したときだけ更新する（#28） */
-  function startRun() {
+  // 遊ばれた回数の記録（play_events）：どこから来たコースか、今走っている回の番号
+  const playSource = useRef<PlaySource>('sample');
+  const playEventId = useRef<Promise<number | null>>(Promise.resolve(null));
+  function startRun(options: { keyboard?: boolean } = {}) {
     prepareAudio();
     if (firstRunCounted.current) firstRunCounted.current = false;
     else if (course?.id) recordPlay(course.id).catch(() => {});
+    playEventId.current = logPlayStart(
+      course?.id ?? (course ? null : SAMPLE_COURSE_ID),
+      playSource.current,
+      options.keyboard ? 'keyboard' : 'phones',
+    );
     goTo('game');
   }
 
@@ -223,6 +238,7 @@ export default function App() {
               courseName={course?.name}
               getRemoteInput={getRemoteInput}
               onFinish={(finished) => {
+                void playEventId.current.then(logPlayFinish);
                 // ランキング用にコースの id を付ける（#29）。写真なしならサンプルの id
                 setResult({
                   ...finished,
@@ -247,7 +263,7 @@ export default function App() {
               room={room}
               course={courseData}
               courseName={courseLabel}
-              onStart={startRun}
+              onStart={(options) => startRun(options)}
               onBack={() => goTo(connectBack)}
             />
           ) : active === 'memories' ? (
@@ -257,6 +273,7 @@ export default function App() {
                 // 保存したコースで遊ぶ（#25）
                 setCourse({ data: saved.data, name: saved.name, id: saved.id });
                 firstRunCounted.current = false;
+                playSource.current = 'memory';
                 setFirstPlayPhoto(null);
                 setSaveNotice('');
                 goToConnect('memories');
@@ -270,6 +287,7 @@ export default function App() {
               onSample={() => {
                 setCourse(null);
                 firstRunCounted.current = false;
+                playSource.current = 'sample';
                 setFirstPlayPhoto(null);
                 setSaveNotice('');
                 goToConnect('home');
@@ -292,6 +310,7 @@ export default function App() {
                 setSaveNotice('');
                 goToConnect('photo');
                 firstRunCounted.current = isDatabaseConfigured;
+                playSource.current = 'photo';
                 // 遊び始めると同時に裏で保存する（#25）。失敗してもゲームは続ける
                 if (isDatabaseConfigured)
                   saveCourse(data, name, comment)
