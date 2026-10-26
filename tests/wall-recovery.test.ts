@@ -93,3 +93,79 @@ test('corner contact remains finite and outside both walls', () => {
     assert.ok(truck.x < 2 && truck.z < 4);
   }
 });
+
+const course = { x: 0, z: 1 };
+test('側の壁に当たると、壁から跳ね返って離れる。コースの後ろへは動かない', () => {
+  const walls = [{ a: { x: 2, z: -100 }, b: { x: 2, z: 100 } }];
+  let truck = initial({ yaw: 0.4, speed: 10 });
+  let hitAt = -1,
+    hitX = 0;
+  for (let i = 0; i < 120; i++) {
+    const previousZ = truck.z;
+    truck = updateGame(
+      truck,
+      { throttle: 0, brake: 0, steering: 0 },
+      1 / 60,
+      walls,
+      course,
+    );
+    assert.equal(hitsWall(truck, walls), false);
+    assert.ok(truck.z >= previousZ - 1e-9, '後ろへ動かない');
+    if (hitAt < 0 && truck.collided) {
+      hitAt = i;
+      hitX = truck.x;
+    }
+    if (hitAt >= 0 && i === hitAt + 18) break;
+  }
+  assert.ok(hitAt >= 0, '壁に当たる');
+  assert.ok(hitX - truck.x > 0.15, `${hitX - truck.x}`);
+});
+
+test('正面の壁に当たっても、跳ね返ってコースの後ろへは戻らない', () => {
+  let truck = initial({ speed: 12 });
+  for (let i = 0; i < 120; i++) {
+    const previousZ = truck.z;
+    truck = updateGame(
+      truck,
+      { throttle: 0, brake: 0, steering: 0 },
+      1 / 60,
+      front,
+      course,
+    );
+    assert.equal(hitsWall(truck, front), false);
+    assert.ok(truck.z >= previousZ - 1e-9);
+  }
+});
+
+test('後輪が壁に引っかかっても、跳ね返りで外れて前へ進める', () => {
+  const walls = [{ a: { x: 2, z: -100 }, b: { x: 2, z: 100 } }];
+  // 壁に沿って走りながら、壁と反対へハンドルを切る（後ろが壁のほうへ振れる）
+  let truck = initial({ x: 2 - 0.68, speed: 3 });
+  let contacts = 0;
+  for (let i = 0; i < 120; i++) {
+    truck = updateGame(
+      truck,
+      { throttle: 1, brake: 0, steering: i < 30 ? -0.4 : 0 },
+      1 / 60,
+      walls,
+      course,
+    );
+    if (truck.collided) contacts++;
+    assert.equal(hitsWall(truck, walls), false);
+  }
+  assert.ok(contacts <= 3, `${contacts}`);
+  assert.ok(truck.z > 6, `${truck.z}`);
+});
+
+test('跳ね返りは少しずつ弱まり、1.5秒ほどでなくなる', () => {
+  let truck = initial({ speed: 0, knockX: -3, knockZ: 0 });
+  for (let i = 0; i < 90; i++)
+    truck = updateGame(
+      truck,
+      { throttle: 0, brake: 1, steering: 0 },
+      1 / 60,
+      [],
+      course,
+    );
+  assert.ok(Math.hypot(truck.knockX ?? 0, truck.knockZ ?? 0) < 0.1);
+});
