@@ -123,7 +123,11 @@ export function SavedCourses({
                 >
                   <CourseThumbnail course={course.data} />
                   {course.comment && (
-                    <p className="saved-course-comment">{course.comment}</p>
+                    <p className="saved-course-comment">
+                      <span className="saved-course-comment-text">
+                        {course.comment}
+                      </span>
+                    </p>
                   )}
                   <div className="saved-course-body">
                     <p className="saved-course-name">
