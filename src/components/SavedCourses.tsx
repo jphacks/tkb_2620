@@ -122,6 +122,13 @@ export function SavedCourses({
                   style={{ '--fade': fade } as CSSProperties}
                 >
                   <CourseThumbnail course={course.data} />
+                  {course.comment && (
+                    <p className="saved-course-comment">
+                      <span className="saved-course-comment-text">
+                        {course.comment}
+                      </span>
+                    </p>
+                  )}
                   <div className="saved-course-body">
                     <p className="saved-course-name">
                       {course.name}

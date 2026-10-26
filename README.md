@@ -126,6 +126,8 @@ https://github.com/user-attachments/assets/efb0d149-8556-42f4-8b1a-fc7fb5b0708e
 
 人の記憶の変化を着想に、繰り返し遊ばれるコースが残る仕掛けを目指しています。
 
+コースを作るときに、「笑顔でピース」のような**コースに一言**（30文字まで、なくてもOK）を残せます。写真は残らないので、カードの地図の上に吹き出しで出して、どんなときのポーズだったかを伝えます。
+
 ## 力を入れたこと
 
 ### すぐには止まれない運転と、滑る荷物
@@ -200,6 +202,7 @@ erDiagram
     courses {
         uuid id PK
         text name "20文字まで"
+        text comment "コースに一言・30文字まで（任意）"
         jsonb course_points "道路の中心線"
         jsonb wall_color_stops "壁の色"
         text theme_color
