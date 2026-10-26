@@ -935,6 +935,50 @@ button:disabled {
   display: flex;
   gap: 8px;
 }
+/* お家に着いたとき：下で喜ぶ・落ち込む配達員が見えるよう、画面の上のほう（HUDのすぐ下）に出す */
+.goal-overlay.goal-top {
+  top: max(118px, 14%);
+  transform: translateX(-50%);
+  padding: 14px 28px;
+}
+.goal-top .goal-time {
+  margin: 0;
+  font-size: 30px;
+}
+.goal-top .delivery-celebration {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+}
+/* 配達失敗：青 */
+.goal-overlay.goal-failed {
+  background: #f3f7fdf2;
+  border: 2px solid #2f5d9e;
+}
+.goal-failed .goal-title {
+  color: #2f5d9e;
+}
+.goal-failed .goal-time {
+  color: #27466f;
+}
+.delivery-failed-mark {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  color: #2f5d9e;
+  animation: delivery-failed-sink 700ms ease-out both;
+}
+@keyframes delivery-failed-sink {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(4px) rotate(-6deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .delivery-failed-mark {
+    animation: none;
+  }
+}
 
 /* リザルト：配送完了伝票（#21） */
 .result-page {
@@ -987,6 +1031,10 @@ button:disabled {
   opacity: 0.9;
   font-family: 'Yu Mincho', 'Hiragino Mincho ProN', serif;
   margin: 4px 0 8px 6px;
+}
+.slip-date-stamp.slip-failed-stamp {
+  border-color: #2f5d9e;
+  color: #2f5d9e;
 }
 .slip-date-stamp-heading {
   font-size: 13px;

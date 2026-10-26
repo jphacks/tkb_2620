@@ -5,7 +5,7 @@ import type { CourseData } from '../../shared/course';
 import type { createScene, DrivingStatus } from './createScene';
 import type { DriveInput } from './updateGame';
 import { createLapTrack, formatTime } from './lap';
-import type { DeliveryResult } from './score';
+import { deliveryFailed, type DeliveryResult } from './score';
 import type { CapturedPerson } from '../capture/capture';
 import { createGameAudio, feedbackEvents, soundSettings } from './feedback';
 import { GameHud } from '../components/GameHud';
@@ -139,7 +139,9 @@ export function GameCanvas({
     )
       audio.current?.countdown(next.countdown === 0);
     if (audible && events.dropped) audio.current?.drop();
-    if (audible && events.delivered) audio.current?.finish();
+    if (audible && events.delivered)
+      if (deliveryFailed(next)) audio.current?.fail();
+      else audio.current?.finish();
     const hit = next.collided && !previousFeedback.current?.collided;
     const previousMotion = accelerationFeedback.current;
     const dt = next.time - previousMotion.time;
@@ -199,10 +201,10 @@ export function GameCanvas({
   useEffect(() => {
     info.current = { courseName, courseLength };
   }, [courseName, courseLength]);
-  // 「配送完了！」を2秒見せてから結果画面へ
+  // 「配送完了！」「配達失敗…」は、配達員が喜ぶ・落ち込む演出（約2.2秒）を見届けてから結果画面へ
   useEffect(() => {
     if (!result) return;
-    const timer = window.setTimeout(() => finishRef.current?.(result), 2000);
+    const timer = window.setTimeout(() => finishRef.current?.(result), 2800);
     return () => window.clearTimeout(timer);
   }, [result]);
   useEffect(() => {
@@ -266,7 +268,9 @@ export function GameCanvas({
               status.introducing
                 ? 'コースを見渡しています…'
                 : status.finished
-                  ? '配送完了！'
+                  ? deliveryFailed(status)
+                    ? '配達失敗…'
+                    : '配送完了！'
                   : status.wrongWay
                     ? '逆走防止中 — ハンドル＋アクセルで向きを戻してください'
                     : status.collided
@@ -342,13 +346,25 @@ export function GameCanvas({
           </span>
         </div>
       )}
-      {status.finished && (
-        <div className="goal-overlay" role="status">
+      {/* 配達員が見えるよう、配送完了・配達失敗とも画面の上のほうに出す */}
+      {status.finished && !deliveryFailed(status) && (
+        <div className="goal-overlay goal-top" role="status">
           <div className="delivery-celebration" aria-hidden="true">
             📦 ✓
           </div>
           <p className="goal-title">配送完了！</p>
           <p>お届け先まで、ふたりで運びきりました！</p>
+          <p className="goal-time">{formatTime(status.time)}</p>
+        </div>
+      )}
+      {/* 荷物を全部落としてお家に着いたとき */}
+      {status.finished && deliveryFailed(status) && (
+        <div className="goal-overlay goal-top goal-failed" role="status">
+          <div className="delivery-failed-mark" aria-hidden="true">
+            📦 ✕
+          </div>
+          <p className="goal-title">配達失敗…</p>
+          <p>荷物を全部落としてしまいました…</p>
           <p className="goal-time">{formatTime(status.time)}</p>
         </div>
       )}

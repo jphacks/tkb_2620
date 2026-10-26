@@ -127,6 +127,12 @@ export function createGameAudio() {
         tone(note, i * 0.12, 0.3),
       );
     },
+    /** 荷物を全部落としてお家に着いたとき。ゆっくり下がっていく音 */
+    fail: () => {
+      [523.25, 466.16, 392, 311.13].forEach((note, i) =>
+        tone(note, i * 0.2, 0.45),
+      );
+    },
     dispose() {
       engine.stop();
       engine.disconnect();

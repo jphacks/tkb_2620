@@ -6,6 +6,7 @@ import { formatTime } from '../game/lap';
 import {
   CARGO_POINTS,
   computeScore,
+  deliveryFailed,
   slipNumber,
   TIME_POINTS,
   type DeliveryResult,
@@ -36,6 +37,8 @@ export default function ResultPage({
     );
 
   const score = computeScore(result);
+  // 荷物を全部落としたときは、青い「配達失敗」のはんこにする
+  const failed = deliveryFailed(result);
   const deliveryDate = new Date(result.finishedAt)
     .toLocaleDateString('ja-JP', {
       year: 'numeric',
@@ -46,9 +49,14 @@ export default function ResultPage({
     .replaceAll('/', '.');
   return (
     <section className="result-page">
-      <article className="delivery-slip" aria-label="配送完了伝票">
+      <article
+        className="delivery-slip"
+        aria-label={failed ? '配送伝票（配達失敗）' : '配送完了伝票'}
+      >
         <header className="slip-header">
-          <span className="slip-title">配送完了伝票</span>
+          <span className="slip-title">
+            {failed ? '配送伝票' : '配送完了伝票'}
+          </span>
           <span className="slip-number">
             No. {slipNumber(result.finishedAt)}
           </span>
@@ -59,11 +67,17 @@ export default function ResultPage({
             <dd>
               <time
                 key={result.finishedAt}
-                className="slip-date-stamp"
+                className={
+                  failed
+                    ? 'slip-date-stamp slip-failed-stamp'
+                    : 'slip-date-stamp'
+                }
                 dateTime={deliveryDate.replaceAll('.', '-')}
-                aria-label={`配達完了日 ${deliveryDate}`}
+                aria-label={`${failed ? '配達失敗' : '配達完了'}日 ${deliveryDate}`}
               >
-                <span className="slip-date-stamp-heading">配達完了</span>
+                <span className="slip-date-stamp-heading">
+                  {failed ? '配達失敗' : '配達完了'}
+                </span>
                 <strong>{deliveryDate}</strong>
                 <span className="slip-date-stamp-office">Bodrive</span>
               </time>

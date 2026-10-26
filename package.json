@@ -29,7 +29,8 @@
     "test:db": "node --test tests/course-row.test.ts",
     "test:memory": "node --test tests/memory.test.ts",
     "test:slope": "node --test tests/elevation.test.ts",
-    "test:checkpoints": "node --test tests/checkpoints.test.ts"
+    "test:checkpoints": "node --test tests/checkpoints.test.ts",
+    "test:courier": "node --test tests/courier.test.ts"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.1",
