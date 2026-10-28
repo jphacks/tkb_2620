@@ -154,3 +154,29 @@ test('坂の上で落ちた荷物は、その場所の道路か地面に着く',
   assert.ok(items.every((c) => c.status === 'lost'));
   assert.ok(items.every((c) => Math.abs(c.fall!.position.y - onRoad) < 1e-9));
 });
+
+test('上り坂でアクセルを離すと止まるが、後ろへは下がらない。平らな道ではクリープで進む', () => {
+  const coast = { throttle: 0, brake: 0, steering: 0 };
+  const start = { ...initialTruckState(sampleCourse), speed: 0 };
+  let up = start,
+    flat = start;
+  for (let i = 0; i < 60; i++) {
+    up = updateGame(up, coast, 0.1, [], undefined, 0.07);
+    flat = updateGame(flat, coast, 0.1, [], undefined, 0);
+  }
+  assert.equal(up.speed, 0);
+  assert.equal(up.distance, 0, '下がらない（進んだ距離が減らない）');
+  assert.ok(flat.distance > 1, 'クリープで少し進む');
+});
+
+test('7%の上り坂は、アクセル全開でも平らな道よりはっきり遅くなる', () => {
+  const full = { throttle: 1, brake: 0, steering: 0 };
+  const run = (grade: number) => {
+    let state = { ...initialTruckState(sampleCourse), speed: 40 / 3.6 };
+    for (let i = 0; i < 60; i++)
+      state = updateGame(state, full, 0.1, [], undefined, grade);
+    return state.speed;
+  };
+  // 6秒走ったあとの速さが、1割以上ちがう
+  assert.ok(run(0.07) < run(0) * 0.9, `${run(0.07)} ${run(0)}`);
+});

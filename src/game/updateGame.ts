@@ -280,11 +280,18 @@ export function updateGame(
       VEHICLE.brakeDeceleration * pressure -
       GRAVITY * slope;
     let speed = next.speed + accel * dt;
-    // クリープ現象：ペダルを離していれば、ほんの少しだけ前へ進む（ブレーキで止まる）
-    if (brake === 0 && pressure === 0 && speed < VEHICLE.creepSpeed)
+    // クリープ現象：ペダルを離していれば、ほんの少しだけ前へ進む（ブレーキで止まる）。
+    // 上り坂では重力の分だけ弱まり、坂に負けるときはその場で止まる（後ろへは下がらない）
+    const creep = VEHICLE.creepAcceleration - GRAVITY * Math.max(0, slope);
+    if (
+      brake === 0 &&
+      pressure === 0 &&
+      speed < VEHICLE.creepSpeed &&
+      creep > 0
+    )
       speed = Math.min(
         VEHICLE.creepSpeed,
-        Math.max(speed, next.speed + VEHICLE.creepAcceleration * dt),
+        Math.max(speed, next.speed + creep * dt),
       );
     speed = Math.max(0, Math.min(VEHICLE.maxSpeed, speed));
     // Gameplay assistance: while touching a wall, the wheel can turn a nearly
